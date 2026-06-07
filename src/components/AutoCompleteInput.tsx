@@ -8,7 +8,6 @@ import {
   Pressable,
   Keyboard,
 } from 'react-native';
-import { LiquidGlassView } from '@callstack/liquid-glass';
 import { useTheme } from '../context/ThemeContext';
 import { searchPlayers, addPlayer, Player } from '../database/sqlite';
 
@@ -23,7 +22,7 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   onPlayerAdd,
   activePlayers,
 }) => {
-  const { colors, glassScheme } = useTheme();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Player[]>([]);
   const [isFocused, setIsFocused] = useState(false);
@@ -107,10 +106,8 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
 
       {/* قائمة الاقتراحات المنسدلة */}
       {isFocused && (query.trim() !== '' || suggestions.length > 0) && (
-        <LiquidGlassView
-          style={[styles.dropdown, { borderColor: colors.border }]}
-          colorScheme={glassScheme}
-          effect="regular"
+        <View
+          style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
           {suggestions.length > 0 && (
             <FlatList
@@ -165,7 +162,7 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
               </Text>
             </Pressable>
           )}
-        </LiquidGlassView>
+        </View>
       )}
     </View>
   );

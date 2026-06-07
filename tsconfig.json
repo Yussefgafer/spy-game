@@ -1,9 +1,6 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
-    "paths": {
-      "@callstack/liquid-glass": ["./Example/src/index.tsx"]
-    }
+    "strict": true
   }
 }
