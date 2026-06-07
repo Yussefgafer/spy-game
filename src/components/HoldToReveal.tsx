@@ -8,10 +8,6 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import {
-  LiquidGlassView,
-  LiquidGlassContainerView,
-} from '@callstack/liquid-glass';
 import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -31,7 +27,7 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
   isSpy,
   onRevealComplete,
 }) => {
-  const { colors, glassScheme } = useTheme();
+  const { colors } = useTheme();
   const [isRevealed, setIsRevealed] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
 
@@ -104,7 +100,7 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
       Animated.timing(progress, {
         toValue: 1,
         duration: 2000,
-        useNativeDriver: false, // نستخدم false لأننا سنقوم بعمل تمدد لعناصر الواجهة
+        useNativeDriver: false,
       }),
       Animated.spring(scale, {
         toValue: 0.95,
@@ -195,17 +191,17 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
   // عرض العداد السائل المتمدد خلف الكارت
   const bubbleScale = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.1, 3],
+    outputRange: [0.1, 3.5],
   });
 
   const bubbleOpacity = progress.interpolate({
     inputRange: [0, 0.1, 1],
-    outputRange: [0, 0.6, 1],
+    outputRange: [0, 0.4, 0.85],
   });
 
   return (
     <View style={styles.container}>
-      <LiquidGlassContainerView spacing={15} style={styles.liquidContainer}>
+      <View style={styles.cardContainer}>
         {/* الكارت الرئيسي للاهتزاز وكشف الهوية */}
         <Animated.View
           style={[
@@ -224,96 +220,119 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
             onPressOut={handlePressOut}
             style={styles.pressable}
           >
-            <LiquidGlassView
-              style={[styles.card, { borderColor: colors.border }]}
-              colorScheme={glassScheme}
-              effect={isRevealed ? 'clear' : 'regular'}
+            <View
+              style={[
+                styles.card,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                },
+              ]}
             >
-              {!isRevealed ? (
-                // واجهة ما قبل الكشف
-                <View style={styles.content}>
-                  <Text style={[styles.title, { color: colors.text }]}>
-                    دور اللاعب: {playerName}
-                  </Text>
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      { backgroundColor: colors.accentMuted },
-                    ]}
-                  >
-                    <Text style={[styles.icon, { color: colors.accent }]}>
-                      🕵️‍♂️
+              {/* العداد السائل الخلفي (Progress Bubble) المندمج مع الكارت */}
+              {isPressing && !isRevealed && (
+                <Animated.View
+                  style={[
+                    styles.progressBubble,
+                    {
+                      backgroundColor: colors.accent,
+                      opacity: bubbleOpacity,
+                      transform: [{ scale: bubbleScale }],
+                    },
+                  ]}
+                />
+              )}
+
+              {/* محتوى الكارت */}
+              <View style={styles.content}>
+                {!isRevealed ? (
+                  // واجهة ما قبل الكشف
+                  <View style={styles.innerContent}>
+                    <Text style={[styles.title, { color: colors.text }]}>
+                      دور اللاعب: {playerName}
+                    </Text>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        { backgroundColor: colors.accentMuted },
+                      ]}
+                    >
+                      <Text style={[styles.icon, { color: colors.accent }]}>
+                        🕵️‍♂️
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.instruction,
+                        { color: colors.textMuted },
+                      ]}
+                    >
+                      اضغط مطولاً لثانيتين لكشف الكارت 🤫
                     </Text>
                   </View>
-                  <Text style={[styles.instruction, { color: colors.textMuted }]}>
-                    اضغط مطولاً لثانيتين لكشف الكارت 🤫
-                  </Text>
-                </View>
-              ) : (
-                // واجهة ما بعد الكشف
-                <View style={styles.content}>
-                  {isSpy ? (
-                    <View style={styles.revealContent}>
-                      <Text style={[styles.spyTitle, { color: colors.danger }]}>
-                        أنت الجاسوس! 🕵️‍♂️
-                      </Text>
-                      <Text
-                        style={[
-                          styles.spyDescription,
-                          { color: colors.textMuted },
-                        ]}
-                      >
-                        حاول معرفة الكلمة السرية من خلال أسئلة اللاعبين دون أن
-                        يكتشفك أحد!
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.revealContent}>
-                      <Text style={[styles.categoryText, { color: colors.textMuted }]}>
-                        التصنيف: {category}
-                      </Text>
-                      <Text style={[styles.wordLabel, { color: colors.text }]}>
-                        الكلمة السرية هي:
-                      </Text>
-                      <Text style={[styles.wordText, { color: colors.accent }]}>
-                        {secretWord}
-                      </Text>
-                    </View>
-                  )}
+                ) : (
+                  // واجهة ما بعد الكشف
+                  <View style={styles.innerContent}>
+                    {isSpy ? (
+                      <View style={styles.revealContent}>
+                        <Text
+                          style={[styles.spyTitle, { color: colors.danger }]}
+                        >
+                          أنت الجاسوس! 🕵️‍♂️
+                        </Text>
+                        <Text
+                          style={[
+                            styles.spyDescription,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          حاول معرفة الكلمة السرية من خلال أسئلة اللاعبين دون أن
+                          يكتشفك أحد!
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.revealContent}>
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          التصنيف: {category}
+                        </Text>
+                        <Text
+                          style={[styles.wordLabel, { color: colors.text }]}
+                        >
+                          الكلمة السرية هي:
+                        </Text>
+                        <Text
+                          style={[styles.wordText, { color: colors.accent }]}
+                        >
+                          {secretWord}
+                        </Text>
+                      </View>
+                    )}
 
-                  <Pressable
-                    onPress={onRevealComplete}
-                    style={({ pressed }) => [
-                      styles.button,
-                      {
-                        backgroundColor: colors.accent,
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.buttonText}>
-                      فهمت، إخفاء وتمرير للهاتف التالي 🤫
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </LiquidGlassView>
+                    <Pressable
+                      onPress={onRevealComplete}
+                      style={({ pressed }) => [
+                        styles.button,
+                        {
+                          backgroundColor: colors.accent,
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.buttonText}>
+                        فهمت، إخفاء وتمرير للهاتف التالي 🤫
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            </View>
           </Pressable>
         </Animated.View>
-
-        {/* العداد السائل الخلفي (Progress Bubble) المندمج مع الكارت */}
-        {isPressing && !isRevealed && (
-          <Animated.View
-            style={[
-              styles.progressBubble,
-              {
-                backgroundColor: colors.accent,
-                opacity: bubbleOpacity,
-                transform: [{ scale: bubbleScale }],
-              },
-            ]}
-          />
-        )}
 
         {/* جزيئات نيون متطايرة حول الكارت أثناء الشحن */}
         {isPressing &&
@@ -328,7 +347,7 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
               ]}
             />
           ))}
-      </LiquidGlassContainerView>
+      </View>
     </View>
   );
 };
@@ -340,11 +359,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 450,
   },
-  liquidContainer: {
+  cardContainer: {
     width: '100%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   cardWrapper: {
     width: width * 0.85,
@@ -361,10 +381,21 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1.5,
     padding: 24,
+    overflow: 'hidden', // مهم جداً لكي لا يخرج العداد السائل عن حدود الكارت
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   content: {
+    flex: 1,
+    width: '100%',
+    zIndex: 3, // ليكون المحتوى فوق العداد السائل دائماً
+  },
+  innerContent: {
     flex: 1,
     width: '100%',
     justifyContent: 'space-between',
@@ -441,6 +472,8 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
+    top: '30%',
+    left: '30%',
     zIndex: 1,
   },
   particle: {

@@ -1,6 +1,5 @@
 import React from 'react';
-import { StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { LiquidGlassView } from '@callstack/liquid-glass';
+import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface LiquidCardProps {
@@ -12,25 +11,22 @@ interface LiquidCardProps {
 export const LiquidCard: React.FC<LiquidCardProps> = ({
   children,
   style,
-  effect = 'regular',
 }) => {
-  const { colors, glassScheme } = useTheme();
+  const { colors } = useTheme();
 
   return (
-    <LiquidGlassView
+    <View
       style={[
         styles.card,
         {
           borderColor: colors.border,
-          backgroundColor: 'transparent',
+          backgroundColor: colors.card, // استخدام لون الكارت المخصص للثيم
         },
         style,
       ]}
-      colorScheme={glassScheme}
-      effect={effect}
     >
       {children}
-    </LiquidGlassView>
+    </View>
   );
 };
 
@@ -40,5 +36,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     padding: 16,
     overflow: 'hidden',
+    // تأثير ظل خفيف ليعطي عمق زجاجي (Glassmorphism Depth)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });
