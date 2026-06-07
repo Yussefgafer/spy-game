@@ -3,14 +3,26 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { LiquidCard } from '../components/LiquidCard';
 
+type ScreenType =
+  | 'HOME'
+  | 'SETUP'
+  | 'REVEAL'
+  | 'GAMEPLAY'
+  | 'VOTE'
+  | 'SPY_GUESS'
+  | 'RESULTS'
+  | 'LEADERBOARD'
+  | 'HISTORY'
+  | 'SETTINGS';
+
 interface HomeScreenProps {
-  onNavigate: (screen: any) => void;
+  onNavigate: (screen: ScreenType) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { colors } = useTheme();
 
-  const menuItems = [
+  const menuItems: { label: string; screen: ScreenType }[] = [
     { label: '🎮 لعب جديد', screen: 'SETUP' },
     { label: '🏆 سجل الأبطال', screen: 'LEADERBOARD' },
     { label: '📜 تاريخ المباريات', screen: 'HISTORY' },

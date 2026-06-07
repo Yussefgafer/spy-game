@@ -41,8 +41,8 @@ export const HoldToReveal: React.FC<HoldToRevealProps> = ({
     Array.from({ length: 6 }, () => new Animated.Value(0))
   ).current;
 
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
-  const vibrationInterval = useRef<NodeJS.Timeout | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const vibrationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // أنيميشن الاهتزاز (Shaking) المتزايد مع الوقت
   const startShaking = () => {

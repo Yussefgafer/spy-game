@@ -31,7 +31,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onBack }) => {
         minute: 'numeric',
         hour12: true,
       }).format(date);
-    } catch (e) {
+    } catch {
       return isoString;
     }
   };

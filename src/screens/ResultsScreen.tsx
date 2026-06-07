@@ -82,6 +82,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     if (success) {
       setResultsSaved(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultsSaved]);
 
   return (

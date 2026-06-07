@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, FlatList } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { AutoCompleteInput } from '../components/AutoCompleteInput';
 import { CATEGORIES } from '../constants/words';

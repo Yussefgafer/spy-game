@@ -67,7 +67,7 @@ export const initDB = () => {
         FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE
       );
     `);
-    console.log('تم تهيئة قاعدة البيانات بنجاح.');
+    // Database initialized successfully
   } catch (error) {
     console.error('خطأ أثناء تهيئة قاعدة البيانات:', error);
   }
@@ -223,7 +223,7 @@ export const saveMatchResult = (
     }
 
     db.execSync('COMMIT;');
-    console.log('تم حفظ نتيجة المباراة وتحديث إحصائيات اللاعبين بنجاح.');
+    // Match result saved and player stats updated successfully
     return true;
   } catch (error) {
     db.execSync('ROLLBACK;');
@@ -243,7 +243,7 @@ export const clearDatabase = (): boolean => {
       DROP TABLE IF EXISTS players;
     `);
     initDB();
-    console.log('تم مسح قاعدة البيانات وإعادة تهيئتها بنجاح.');
+    // Database cleared and reinitialized successfully
     return true;
   } catch (error) {
     console.error('خطأ أثناء مسح قاعدة البيانات:', error);

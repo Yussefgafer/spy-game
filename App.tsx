@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { initDB } from './src/database/sqlite';
 import { CATEGORIES } from './src/constants/words';
@@ -29,7 +30,7 @@ type ScreenType =
   | 'SETTINGS';
 
 function MainApp() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('HOME');
 
   // إعدادات المباراة الجارية
@@ -49,6 +50,16 @@ function MainApp() {
     initDB();
   }, []);
 
+  // دالة خلط عشوائي أفضل (Fisher-Yates Shuffle)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const handleStartGame = (config: {
     category: string;
     spyCount: number;
@@ -56,17 +67,16 @@ function MainApp() {
   }) => {
     setGameConfig(config);
 
-    // 1. اختيار الجواسيس عشوائياً
-    const shuffledPlayers = [...config.players].sort(() => 0.5 - Math.random());
+    // 1. اختيار الجواسيس عشوائياً باستخدام Fisher-Yates
+    const shuffledPlayers = shuffleArray(config.players);
     const selectedSpies = shuffledPlayers.slice(0, config.spyCount);
     setSpies(selectedSpies);
 
     // 2. اختيار الكلمة السرية عشوائياً من التصنيف المحدد
     const categoryObj = CATEGORIES.find((c) => c.id === config.category);
     if (categoryObj) {
-      const randomWord =
-        categoryObj.words[Math.floor(Math.random() * categoryObj.words.length)];
-      setSecretWord(randomWord);
+      const shuffledWords = shuffleArray(categoryObj.words);
+      setSecretWord(shuffledWords[0]);
     }
 
     setCorrectVoters([]);
@@ -99,16 +109,18 @@ function MainApp() {
         );
       case 'REVEAL':
         if (!gameConfig) return null;
-        const catObj = CATEGORIES.find((c) => c.id === gameConfig.category);
-        return (
-          <RevealScreen
-            players={gameConfig.players}
-            spies={spies}
-            secretWord={secretWord}
-            categoryName={catObj ? catObj.name : ''}
-            onRevealComplete={() => setCurrentScreen('GAMEPLAY')}
-          />
-        );
+        {
+          const catObj = CATEGORIES.find((c) => c.id === gameConfig.category);
+          return (
+            <RevealScreen
+              players={gameConfig.players}
+              spies={spies}
+              secretWord={secretWord}
+              categoryName={catObj ? catObj.name : ''}
+              onRevealComplete={() => setCurrentScreen('GAMEPLAY')}
+            />
+          );
+        }
       case 'GAMEPLAY':
         if (!gameConfig) return null;
         return (
@@ -159,10 +171,13 @@ function MainApp() {
     }
   };
 
+  // تحديد لون الـ status bar بناءً على الثيم
+  const isDarkTheme = theme === 'DARK' || theme === 'NEON';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
-        barStyle={colors.background === '#FFFFFF' ? 'dark-content' : 'light-content'}
+        barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
       {renderScreen()}
@@ -172,9 +187,11 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <MainApp />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <MainApp />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
