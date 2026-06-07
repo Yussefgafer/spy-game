@@ -1,50 +1,141 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Users, ChevronRight, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { LiquidCard } from '../components/LiquidCard';
+import { RootStackParamList } from '../../App';
+import { hapticLight } from '../utils/haptics';
 
-interface GameplayScreenProps {
-  players: string[];
-  onEndQuestions: () => void;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type GameplayRouteProp = RouteProp<RootStackParamList, 'Gameplay'>;
 
-export const GameplayScreen: React.FC<GameplayScreenProps> = ({ players, onEndQuestions }) => {
+export const GameplayScreen: React.FC = () => {
   const { colors } = useTheme();
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<GameplayRouteProp>();
+  const { players } = route.params;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>مرحلة الأسئلة والشكوك 🕵️‍♂️</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-        اسألوا بعضكم البعض بحرية لتكتشفوا العميل السري!
-      </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>مرحلة الأسئلة</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+          اسألوا بعضكم البعض لكشف الجاسوس
+        </Text>
+      </View>
 
-      <ScrollView style={styles.playersScroll} contentContainerStyle={styles.playersContainer}>
-        <Text style={[styles.listHeader, { color: colors.text }]}>اللاعبون في الجولة الحالية:</Text>
-        {players.map((player, index) => (
-          <View key={index} style={[styles.playerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.playerText, { color: colors.text }]}>{player}</Text>
+      {/* Players */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={[styles.playersCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.playersHeader}>
+            <Users size={20} color={colors.accent} />
+            <Text style={[styles.playersTitle, { color: colors.text }]}>اللاعبون</Text>
           </View>
-        ))}
+          {players.map((player, index) => (
+            <View
+              key={index}
+              style={[
+                styles.playerItem,
+                index < players.length - 1 && { borderBottomColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[styles.instruction, { color: colors.textMuted }]}>
+          كل لاعب يسأل لاعباً آخر سؤالاً عن الكلمة. حاولوا كشف الجاسوس من خلال إجاباته!
+        </Text>
       </ScrollView>
 
-      <Pressable onPress={onEndQuestions}>
-        <LiquidCard style={[styles.endBtn, { backgroundColor: colors.accent }]}>
-          <Text style={styles.endBtnText}>انتهت الأسئلة / كشف الجاسوس 🚨</Text>
-        </LiquidCard>
-      </Pressable>
+      {/* End Button */}
+      <View style={styles.footer}>
+        <Pressable
+          onPress={() => {
+            hapticLight();
+            // For now, skip vote and go to spy guess
+            navigation.navigate('SpyGuess', { categoryId: 'places', correctWord: '' });
+          }}
+          style={[styles.endButton, { backgroundColor: colors.accent }]}
+        >
+          <Text style={styles.endButtonText}>انتهت الأسئلة</Text>
+          <ArrowLeft size={20} color="#000" />
+        </Pressable>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60 },
-  title: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 15, textAlign: 'center', marginBottom: 30, lineHeight: 22 },
-  playersScroll: { flex: 1, marginBottom: 20 },
-  playersContainer: { gap: 10 },
-  listHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 10 },
-  playerCard: { padding: 16, borderRadius: 14, borderWidth: 1, alignItems: 'center' },
-  playerText: { fontSize: 16, fontWeight: '600' },
-  endBtn: { height: 56, justifyContent: 'center', alignItems: 'center' },
-  endBtnText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  playersCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
+  },
+  playersHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  playersTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  playerItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  playerName: {
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  instruction: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  footer: {
+    padding: 16,
+  },
+  endButton: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 54,
+    borderRadius: 14,
+    gap: 10,
+  },
+  endButtonText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#000',
+  },
 });

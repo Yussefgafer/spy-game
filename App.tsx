@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { initDB } from './src/database/sqlite';
 import { CATEGORIES } from './src/constants/words';
 
-// استيراد الشاشات
 import { HomeScreen } from './src/screens/HomeScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
 import { RevealScreen } from './src/screens/RevealScreen';
@@ -17,162 +18,77 @@ import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 
-type ScreenType =
-  | 'HOME'
-  | 'SETUP'
-  | 'REVEAL'
-  | 'GAMEPLAY'
-  | 'VOTE'
-  | 'SPY_GUESS'
-  | 'RESULTS'
-  | 'LEADERBOARD'
-  | 'HISTORY'
-  | 'SETTINGS';
+export type RootStackParamList = {
+  Home: undefined;
+  Setup: undefined;
+  Reveal: {
+    players: string[];
+    spies: string[];
+    secretWord: string;
+    categoryName: string;
+  };
+  Gameplay: { players: string[] };
+  Vote: { players: string[]; spies: string[] };
+  SpyGuess: { categoryId: string; correctWord: string };
+  Results: {
+    config: { category: string; spyCount: number; players: string[] };
+    spies: string[];
+    secretWord: string;
+    correctVoters: string[];
+    spyGuessedCorrectly: boolean;
+  };
+  Leaderboard: undefined;
+  History: undefined;
+  Settings: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Fisher-Yates shuffle
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+function AppNavigator() {
+  const { colors } = useTheme();
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+        }}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Setup" component={SetupScreen} />
+        <Stack.Screen name="Reveal" component={RevealScreen} />
+        <Stack.Screen name="Gameplay" component={GameplayScreen} />
+        <Stack.Screen name="Vote" component={VoteScreen} />
+        <Stack.Screen name="SpyGuess" component={SpyGuessScreen} />
+        <Stack.Screen name="Results" component={ResultsScreen} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+        <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
 function MainApp() {
   const { colors, theme } = useTheme();
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('HOME');
+  const isDarkTheme = theme === 'DARK' || theme === 'NEON';
 
-  // إعدادات المباراة الجارية
-  const [gameConfig, setGameConfig] = useState<{
-    category: string;
-    spyCount: number;
-    players: string[];
-  } | null>(null);
-
-  const [spies, setSpies] = useState<string[]>([]);
-  const [secretWord, setSecretWord] = useState('');
-  const [correctVoters, setCorrectVoters] = useState<string[]>([]);
-  const [spyGuessedCorrectly, setSpyGuessedCorrectly] = useState(false);
-
-  // تهيئة قاعدة البيانات عند الإقلاع
   useEffect(() => {
     initDB();
   }, []);
-
-  // دالة خلط عشوائي أفضل (Fisher-Yates Shuffle)
-  const shuffleArray = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
-
-  const handleStartGame = (config: {
-    category: string;
-    spyCount: number;
-    players: string[];
-  }) => {
-    setGameConfig(config);
-
-    // 1. اختيار الجواسيس عشوائياً باستخدام Fisher-Yates
-    const shuffledPlayers = shuffleArray(config.players);
-    const selectedSpies = shuffledPlayers.slice(0, config.spyCount);
-    setSpies(selectedSpies);
-
-    // 2. اختيار الكلمة السرية عشوائياً من التصنيف المحدد
-    const categoryObj = CATEGORIES.find((c) => c.id === config.category);
-    if (categoryObj) {
-      const shuffledWords = shuffleArray(categoryObj.words);
-      setSecretWord(shuffledWords[0]);
-    }
-
-    setCorrectVoters([]);
-    setSpyGuessedCorrectly(false);
-    setCurrentScreen('REVEAL');
-  };
-
-  const handleNewGameSamePlayers = () => {
-    if (gameConfig) {
-      handleStartGame(gameConfig);
-    }
-  };
-
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'HOME':
-        return <HomeScreen onNavigate={setCurrentScreen} />;
-      case 'SETTINGS':
-        return <SettingsScreen onBack={() => setCurrentScreen('HOME')} />;
-      case 'LEADERBOARD':
-        return <LeaderboardScreen onBack={() => setCurrentScreen('HOME')} />;
-      case 'HISTORY':
-        return <HistoryScreen onBack={() => setCurrentScreen('HOME')} />;
-      case 'SETUP':
-        return (
-          <SetupScreen
-            onStartGame={handleStartGame}
-            onBack={() => setCurrentScreen('HOME')}
-          />
-        );
-      case 'REVEAL':
-        if (!gameConfig) return null;
-        {
-          const catObj = CATEGORIES.find((c) => c.id === gameConfig.category);
-          return (
-            <RevealScreen
-              players={gameConfig.players}
-              spies={spies}
-              secretWord={secretWord}
-              categoryName={catObj ? catObj.name : ''}
-              onRevealComplete={() => setCurrentScreen('GAMEPLAY')}
-            />
-          );
-        }
-      case 'GAMEPLAY':
-        if (!gameConfig) return null;
-        return (
-          <GameplayScreen
-            players={gameConfig.players}
-            onEndQuestions={() => setCurrentScreen('VOTE')}
-          />
-        );
-      case 'VOTE':
-        if (!gameConfig) return null;
-        return (
-          <VoteScreen
-            players={gameConfig.players}
-            spies={spies}
-            onVoteComplete={(voters) => {
-              setCorrectVoters(voters);
-              setCurrentScreen('SPY_GUESS');
-            }}
-          />
-        );
-      case 'SPY_GUESS':
-        if (!gameConfig) return null;
-        return (
-          <SpyGuessScreen
-            categoryId={gameConfig.category}
-            correctWord={secretWord}
-            onSpyGuessComplete={(isCorrect) => {
-              setSpyGuessedCorrectly(isCorrect);
-              setCurrentScreen('RESULTS');
-            }}
-          />
-        );
-      case 'RESULTS':
-        if (!gameConfig) return null;
-        return (
-          <ResultsScreen
-            config={gameConfig}
-            spies={spies}
-            secretWord={secretWord}
-            correctVoters={correctVoters}
-            spyGuessedCorrectly={spyGuessedCorrectly}
-            onNewGame={handleNewGameSamePlayers}
-            onBackToHome={() => setCurrentScreen('HOME')}
-          />
-        );
-      default:
-        return <HomeScreen onNavigate={setCurrentScreen} />;
-    }
-  };
-
-  // تحديد لون الـ status bar بناءً على الثيم
-  const isDarkTheme = theme === 'DARK' || theme === 'NEON';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -180,7 +96,7 @@ function MainApp() {
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      {renderScreen()}
+      <AppNavigator />
     </SafeAreaView>
   );
 }
@@ -198,3 +114,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 });
+
+// Export utility for use in screens
+export { shuffleArray, CATEGORIES };

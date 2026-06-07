@@ -1,21 +1,20 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ChevronRight, Trophy, Users, Target, ChevronLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { RootStackParamList } from '../../App';
 import { getLeaderboard, Player } from '../database/sqlite';
-import { LiquidCard } from '../components/LiquidCard';
-import { EmptyState } from '../components/EmptyState';
+import { hapticLight } from '../utils/haptics';
 
-interface LeaderboardScreenProps {
-  onBack: () => void;
-  onStartGame?: () => void;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Medal colors for top 3
-const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
-const MEDAL_EMOJIS = ['🥇', '🥈', '🥉'];
+const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
-export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack, onStartGame }) => {
+export const LeaderboardScreen: React.FC = () => {
   const { colors } = useTheme();
+  const navigation = useNavigation<NavigationProp>();
   const [leaderboard, setLeaderboard] = useState<Player[]>([]);
 
   useEffect(() => {
@@ -23,124 +22,80 @@ export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack, on
     setLeaderboard(data);
   }, []);
 
-  const getRankStyle = (index: number) => {
-    if (index < 3) {
-      return {
-        medalEmoji: MEDAL_EMOJIS[index],
-        isTopThree: true,
-      };
-    }
-    return {
-      medalEmoji: null,
-      isTopThree: false,
-    };
-  };
-
-  const renderPlayerCard = useCallback(
-    (player: Player, index: number) => {
-      const { medalEmoji, isTopThree } = getRankStyle(index);
-
-      return (
-        <View
-          key={player.id}
-          style={[
-            styles.playerCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: isTopThree ? MEDAL_COLORS[index] : colors.border,
-              borderWidth: isTopThree ? 2 : 1,
-              transform: [{ scale: index === 0 ? 1.02 : 1 }],
-            },
-          ]}
-        >
-          {/* Rank Badge */}
-          <View style={styles.rankSection}>
-            {medalEmoji ? (
-              <Text style={styles.medalEmoji}>{medalEmoji}</Text>
-            ) : (
-              <View style={[styles.rankBadge, { backgroundColor: colors.accentMuted }]}>
-                <Text style={[styles.rankText, { color: colors.accent }]}>{index + 1}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Player Info */}
-          <View style={styles.playerInfo}>
-            <Text style={[styles.playerName, { color: colors.text }]}>{player.name}</Text>
-            <View style={styles.statsRow}>
-              <Text style={[styles.statText, { color: colors.textMuted }]}>
-                🎮 {player.matches_played}
-              </Text>
-              <Text style={[styles.statText, { color: colors.textMuted }]}>
-                🕵️ {player.spy_wins}
-              </Text>
-            </View>
-          </View>
-
-          {/* Points */}
-          <View style={styles.pointsSection}>
-            <Text style={[styles.pointsValue, { color: colors.accent }]}>{player.total_points}</Text>
-            <Text style={[styles.pointsLabel, { color: colors.textMuted }]}>نقطة</Text>
-          </View>
-        </View>
-      );
-    },
-    [colors]
-  );
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.accent }]}>🏆 سجل الأبطال</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          ترتيب اللاعبين حسب مجموع النقاط
-        </Text>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ChevronRight size={24} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>سجل الأبطال</Text>
+        <View style={styles.backButton} />
       </View>
 
-      {/* Content */}
       {leaderboard.length === 0 ? (
-        <EmptyState
-          emoji="🏆"
-          title="لا يوجد أبطال بعد"
-          message="ابدأ لعب مباراتك الأولى ليظهر اللاعبون هنا!"
-          actionLabel={onStartGame ? '🎮 ابدأ اللعب' : undefined}
-          onAction={onStartGame}
-        />
+        <View style={styles.emptyContainer}>
+          <Trophy size={48} color={colors.textMuted} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>لا يوجد أبطال بعد</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+            ابدأ لعب مباراتك الأولى
+          </Text>
+        </View>
       ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Stats Summary */}
-          <View style={[styles.statsSummary, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <>
+          {/* Stats */}
+          <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.accent }]}>{leaderboard.length}</Text>
+              <Users size={18} color={colors.accent} />
+              <Text style={[styles.statValue, { color: colors.text }]}>{leaderboard.length}</Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>لاعب</Text>
             </View>
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.accent }]}>
+              <Target size={18} color={colors.accent} />
+              <Text style={[styles.statValue, { color: colors.text }]}>
                 {leaderboard.reduce((sum, p) => sum + p.total_points, 0)}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>نقطة إجمالي</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>نقطة</Text>
             </View>
           </View>
 
-          {/* Player List */}
-          {leaderboard.map((player, index) => renderPlayerCard(player, index))}
-        </ScrollView>
+          {/* List */}
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            {leaderboard.map((player, index) => {
+              const isTopThree = index < 3;
+              return (
+                <View
+                  key={player.id}
+                  style={[
+                    styles.playerCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: isTopThree ? MEDAL_COLORS[index] : colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.rankSection}>
+                    {isTopThree ? (
+                      <View style={[styles.medalBadge, { backgroundColor: `${MEDAL_COLORS[index]}20` }]}>
+                        <Text style={[styles.medalText, { color: MEDAL_COLORS[index] }]}>{index + 1}</Text>
+                      </View>
+                    ) : (
+                      <Text style={[styles.rankText, { color: colors.textMuted }]}>{index + 1}</Text>
+                    )}
+                  </View>
+                  <View style={styles.playerInfo}>
+                    <Text style={[styles.playerName, { color: colors.text }]}>{player.name}</Text>
+                    <Text style={[styles.playerStats, { color: colors.textMuted }]}>
+                      {player.matches_played} مباراة
+                    </Text>
+                  </View>
+                  <Text style={[styles.points, { color: colors.accent }]}>{player.total_points}</Text>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </>
       )}
-
-      {/* Back Button */}
-      <View style={styles.footer}>
-        <Pressable onPress={onBack} style={{ width: '100%' }}>
-          <LiquidCard style={[styles.backBtn, { borderColor: colors.border }]}>
-            <Text style={[styles.backBtnText, { color: colors.text }]}>🏠 رجوع للرئيسية</Text>
-          </LiquidCard>
-        </Pressable>
-      </View>
     </View>
   );
 };
@@ -150,76 +105,76 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  statsSummary: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  statsCard: {
+    flexDirection: 'row-reverse',
+    marginHorizontal: 16,
+    marginBottom: 16,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 16,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
+    gap: 4,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 12,
-    marginTop: 4,
   },
-  statDivider: {
-    width: 1,
-    height: 40,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   playerCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
     marginBottom: 10,
   },
   rankSection: {
-    width: 50,
+    width: 36,
     alignItems: 'center',
   },
-  medalEmoji: {
-    fontSize: 32,
-  },
-  rankBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  medalBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  medalText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   rankText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   playerInfo: {
     flex: 1,
@@ -227,41 +182,31 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   playerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '600',
   },
-  statsRow: {
-    flexDirection: 'row-reverse',
-    gap: 12,
-  },
-  statText: {
-    fontSize: 13,
-  },
-  pointsSection: {
-    alignItems: 'center',
-  },
-  pointsValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  pointsLabel: {
-    fontSize: 11,
+  playerStats: {
+    fontSize: 12,
     marginTop: 2,
   },
-  footer: {
-    padding: 20,
-    paddingBottom: 30,
+  points: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  backBtn: {
-    height: 56,
+  emptyContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1.5,
+    paddingHorizontal: 40,
   },
-  backBtnText: {
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

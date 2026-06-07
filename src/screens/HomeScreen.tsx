@@ -1,114 +1,91 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Play, Trophy, History, Settings } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { HowToPlayModal } from '../components/HowToPlayModal';
-import { hapticLight, hapticSelection } from '../utils/haptics';
+import { RootStackParamList } from '../../App';
+import { hapticLight } from '../utils/haptics';
 
-type ScreenType =
-  | 'HOME'
-  | 'SETUP'
-  | 'REVEAL'
-  | 'GAMEPLAY'
-  | 'VOTE'
-  | 'SPY_GUESS'
-  | 'RESULTS'
-  | 'LEADERBOARD'
-  | 'HISTORY'
-  | 'SETTINGS';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface HomeScreenProps {
-  onNavigate: (screen: ScreenType) => void;
-}
-
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
+export const HomeScreen: React.FC = () => {
   const { colors } = useTheme();
-  const [showTutorial, setShowTutorial] = useState(false);
+  const navigation = useNavigation<NavigationProp>();
 
-  const menuItems: { label: string; screen: ScreenType; emoji: string }[] = [
-    { label: 'لعب جديد', screen: 'SETUP', emoji: '🎮' },
-    { label: 'سجل الأبطال', screen: 'LEADERBOARD', emoji: '🏆' },
-    { label: 'تاريخ المباريات', screen: 'HISTORY', emoji: '📜' },
-    { label: 'الإعدادات', screen: 'SETTINGS', emoji: '⚙️' },
+  const menuItems = [
+    {
+      label: 'لعب جديد',
+      screen: 'Setup' as const,
+      Icon: Play,
+      color: '#10B981',
+    },
+    {
+      label: 'سجل الأبطال',
+      screen: 'Leaderboard' as const,
+      Icon: Trophy,
+      color: '#F59E0B',
+    },
+    {
+      label: 'تاريخ المباريات',
+      screen: 'History' as const,
+      Icon: History,
+      color: '#3B82F6',
+    },
   ];
 
-  const handleNavigate = (screen: ScreenType) => {
+  const handlePress = (screen: 'Setup' | 'Leaderboard' | 'History') => {
     hapticLight();
-    onNavigate(screen);
-  };
-
-  const handleTutorialOpen = () => {
-    hapticSelection();
-    setShowTutorial(true);
-  };
-
-  const MenuItem: React.FC<{ item: { label: string; screen: ScreenType; emoji: string } }> = ({
-    item,
-  }) => {
-    const scaleAnim = new Animated.Value(1);
-
-    const handlePressIn = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.96,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    return (
-      <Pressable
-        onPress={() => handleNavigate(item.screen)}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={{ width: '100%' }}
-      >
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <View style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={styles.menuEmoji}>{item.emoji}</Text>
-            <Text style={[styles.menuText, { color: colors.text }]}>{item.label}</Text>
-            <Text style={[styles.menuArrow, { color: colors.textMuted }]}>←</Text>
-          </View>
-        </Animated.View>
-      </Pressable>
-    );
+    navigation.navigate(screen);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Logo Section */}
-      <View style={styles.logoSection}>
-        <View style={[styles.logoCircle, { backgroundColor: colors.accentMuted }]}>
-          <Text style={styles.logoEmoji}>🕵️‍♂️</Text>
-        </View>
-        <Text style={[styles.logo, { color: colors.accent }]}>الجاسوس</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>الجاسوس</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           من هو الجاسوس بينكم؟
         </Text>
       </View>
 
-      {/* Menu Items */}
-      <View style={styles.menu}>
-        {menuItems.map((item, index) => (
-          <MenuItem key={index} item={item} />
-        ))}
+      {/* Menu Grid */}
+      <View style={styles.menuGrid}>
+        {menuItems.map((item, index) => {
+          const IconComponent = item.Icon;
+          return (
+            <Pressable
+              key={index}
+              onPress={() => handlePress(item.screen)}
+              style={({ pressed }) => [
+                styles.menuCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
+                <IconComponent size={28} color={item.color} />
+              </View>
+              <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      {/* Help Button */}
-      <Pressable onPress={handleTutorialOpen} style={styles.helpButton}>
-        <View style={[styles.helpButtonContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={styles.helpEmoji}>❓</Text>
-          <Text style={[styles.helpText, { color: colors.textMuted }]}>كيف تلعب؟</Text>
-        </View>
-      </Pressable>
-
-      {/* Tutorial Modal */}
-      <HowToPlayModal visible={showTutorial} onClose={() => setShowTutorial(false)} />
+      {/* Settings Button - Fixed at bottom */}
+      <View style={styles.footer}>
+        <Pressable
+          onPress={() => navigation.navigate('Settings')}
+          style={({ pressed }) => [
+            styles.settingsButton,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <Settings size={20} color={colors.textMuted} />
+          <Text style={[styles.settingsLabel, { color: colors.textMuted }]}>الإعدادات</Text>
+        </Pressable>
+      </View>
     </View>
   );
 };
@@ -116,75 +93,60 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  header: {
+    paddingTop: 20,
+    paddingBottom: 30,
     alignItems: 'center',
-    padding: 24,
   },
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoEmoji: {
-    fontSize: 50,
-  },
-  logo: {
-    fontSize: 42,
+  title: {
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
   },
-  menu: {
-    width: '100%',
-    gap: 12,
-    marginBottom: 32,
+  menuGrid: {
+    flex: 1,
+    gap: 16,
   },
-  menuItem: {
+  menuCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    height: 64,
+    padding: 20,
     borderRadius: 16,
-    borderWidth: 1.5,
-    paddingHorizontal: 20,
+    borderWidth: 1,
+    gap: 16,
   },
-  menuEmoji: {
-    fontSize: 24,
-    marginLeft: 16,
+  iconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  menuText: {
-    flex: 1,
+  menuLabel: {
     fontSize: 18,
     fontWeight: '600',
-    textAlign: 'right',
+    flex: 1,
   },
-  menuArrow: {
-    fontSize: 20,
+  footer: {
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
-  helpButton: {
-    width: '100%',
-  },
-  helpButtonContent: {
+  settingsButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 48,
-    borderRadius: 14,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    gap: 8,
+    gap: 10,
   },
-  helpEmoji: {
-    fontSize: 18,
-  },
-  helpText: {
+  settingsLabel: {
     fontSize: 15,
     fontWeight: '500',
   },
