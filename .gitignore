@@ -88,3 +88,5 @@ nitrogen/
 
 # AI
 GEMINI.md
+pnpm-lock.yaml
+pnpm-workspace.yaml

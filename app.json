@@ -4,7 +4,6 @@
     "slug": "spy-game",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./Example/example/assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -12,12 +11,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./Example/example/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
-      "favicon": "./Example/example/assets/favicon.png"
+      "favicon": ""
     }
   }
 }

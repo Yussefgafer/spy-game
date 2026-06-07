@@ -12,10 +12,10 @@
     "@callstack/liquid-glass": "link:./Example",
     "@react-native-async-storage/async-storage": "1.24.0",
     "expo": "~56.0.9",
-    "expo-constants": "~18.0.0",
-    "expo-file-system": "~19.0.0",
-    "expo-sqlite": "~16.0.0",
-    "expo-status-bar": "~2.1.0",
+    "expo-constants": "~56.0.17",
+    "expo-file-system": "~56.0.7",
+    "expo-sqlite": "~56.0.4",
+    "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
     "react-native": "0.85.0",
     "react-native-safe-area-context": "5.5.2",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
-    "babel-preset-expo": "~11.0.0",
+    "babel-preset-expo": "~56.0.14",
     "@types/react": "~19.2.0",
     "typescript": "^6.0.0"
   },
