@@ -115,15 +115,16 @@ export const addPlayer = (name: string): Player | null => {
 /**
  * البحث عن لاعبين بالاقتراحات (Auto-complete)
  */
-export const searchPlayers = (query: string): Player[] => {
+export const searchPlayers = async (query: string): Promise<Player[]> => {
   try {
     const database = getDatabase();
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return [];
 
-    const results = database.getAllSync<Player>(
-      'SELECT * FROM players WHERE name LIKE ? LIMIT 5;',
-      [`%${trimmedQuery}%`]
+    const sanitized = trimmedQuery.replace(/[%_]/g, '\\$&');
+    const results = await database.getAllAsync<Player>(
+      'SELECT * FROM players WHERE name LIKE ? ESCAPE \'\\\\\' LIMIT 5;',
+      [`%${sanitized}%`]
     );
     return results;
   } catch (error) {
@@ -135,10 +136,10 @@ export const searchPlayers = (query: string): Player[] => {
 /**
  * جلب قائمة المتصدرين مرتبة تنازلياً حسب النقاط
  */
-export const getLeaderboard = (): Player[] => {
+export const getLeaderboard = async (): Promise<Player[]> => {
   try {
     const database = getDatabase();
-    const results = database.getAllSync<Player>(
+    const results = await database.getAllAsync<Player>(
       'SELECT * FROM players ORDER BY total_points DESC;'
     );
     return results;
@@ -149,24 +150,47 @@ export const getLeaderboard = (): Player[] => {
 };
 
 /**
- * جلب تاريخ المباريات بالكامل مع تفاصيل كل مباراة
+ * جلب تاريخ المباريات بالكامل مع تفاصيل كل مباراة — JOIN واحد بدلاً من N+1
  */
-export const getHistory = (): Match[] => {
+export const getHistory = async (): Promise<Match[]> => {
   try {
     const database = getDatabase();
-    const matches = database.getAllSync<Match>(
-      'SELECT * FROM matches ORDER BY date DESC;'
+
+    const rows = await database.getAllAsync<Match & MatchDetail & { md_match_id: number }>(
+      `SELECT
+         m.id, m.date, m.category, m.secret_word, m.spy_names, m.winner, m.points_pool,
+         md.match_id AS md_match_id, md.player_name, md.role, md.voted_correctly, md.points_gained
+       FROM matches m
+       LEFT JOIN match_details md ON m.id = md.match_id
+       ORDER BY m.date DESC;`
     );
 
-    const historyWithDetails = matches.map((match) => {
-      const details = database.getAllSync<MatchDetail>(
-        'SELECT * FROM match_details WHERE match_id = ?;',
-        [match.id]
-      );
-      return { ...match, details };
-    });
+    const matchMap = new Map<number, Match>();
+    for (const row of rows) {
+      if (!matchMap.has(row.id)) {
+        matchMap.set(row.id, {
+          id: row.id,
+          date: row.date,
+          category: row.category,
+          secret_word: row.secret_word,
+          spy_names: row.spy_names,
+          winner: row.winner,
+          points_pool: row.points_pool,
+          details: [],
+        });
+      }
+      if (row.md_match_id != null) {
+        matchMap.get(row.id)!.details!.push({
+          match_id: row.md_match_id,
+          player_name: row.player_name,
+          role: row.role,
+          voted_correctly: row.voted_correctly,
+          points_gained: row.points_gained,
+        });
+      }
+    }
 
-    return historyWithDetails;
+    return Array.from(matchMap.values());
   } catch (error) {
     console.error('خطأ أثناء جلب تاريخ المباريات:', error);
     return [];

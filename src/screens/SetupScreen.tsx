@@ -39,10 +39,10 @@ export const SetupScreen: React.FC = () => {
     loadSavedPrefs();
   }, []);
 
-  const handleSearchPlayers = (text: string) => {
+  const handleSearchPlayers = async (text: string) => {
     setPlayerName(text);
     if (text.trim()) {
-      const results = searchPlayers(text);
+      const results = await searchPlayers(text);
       const filtered = results.filter((p) => !players.includes(p.name));
       setSuggestions(filtered);
       setShowSuggestions(true);

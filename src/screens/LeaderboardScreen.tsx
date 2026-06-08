@@ -20,8 +20,11 @@ export const LeaderboardScreen: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<Player[]>([]);
 
   useEffect(() => {
-    const data = getLeaderboard();
-    setLeaderboard(data);
+    const load = async () => {
+      const data = await getLeaderboard();
+      setLeaderboard(data);
+    };
+    load();
   }, []);
 
   return (

@@ -53,10 +53,10 @@ export const VoteScreen: React.FC = () => {
     hapticSuccess();
 
     if (isLastVoter) {
-      // Calculate results - who voted for actual spies (excluding skipped voters)
+      // الجواسيس يُستبعدون من correctVoters حتى لو صوّتوا على جاسوس آخر
       const correctVoters: string[] = [];
       Object.entries(votes).forEach(([voter, suspected]) => {
-        if (spies.includes(suspected)) {
+        if (spies.includes(suspected) && !spies.includes(voter)) {
           correctVoters.push(voter);
         }
       });

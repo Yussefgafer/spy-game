@@ -25,6 +25,7 @@ export const GameplayScreen: React.FC = () => {
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const [timerExpired, setTimerExpired] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningTriggeredRef = useRef(false);
 
@@ -43,17 +44,15 @@ export const GameplayScreen: React.FC = () => {
     loadTimerSetting();
   }, []);
 
-  // Timer effect
+  // Timer effect — لا side effects داخل setTimeLeft
   useEffect(() => {
     if (timerActive && timerEnabled) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             if (timerRef.current) clearInterval(timerRef.current);
-            handleEndQuestions();
             return 0;
           }
-          // Haptic warning at 30 seconds
           if (prev === 31 && !warningTriggeredRef.current) {
             warningTriggeredRef.current = true;
             hapticWarning();
@@ -68,6 +67,15 @@ export const GameplayScreen: React.FC = () => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, timerEnabled]);
+
+  // مراقبة انتهاء الوقت بشكل منفصل — لا navigation داخل setState
+  useEffect(() => {
+    if (timeLeft === 0 && timerEnabled && !timerExpired) {
+      setTimerExpired(true);
+      handleEndQuestions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
 
   const toggleTimerEnabled = async () => {
     hapticLight();
@@ -218,20 +226,25 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, i
 
   useEffect(() => {
     if (isUrgent && !isPaused) {
-      Animated.loop(
+      const pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.spring(pulseAnim, { toValue: 1.08, tension: 300, friction: 8, useNativeDriver: true }),
           Animated.spring(pulseAnim, { toValue: 1, tension: 300, friction: 8, useNativeDriver: true }),
         ])
-      ).start();
-
-      Animated.loop(
+      );
+      const shakeLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(shakeAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: -1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      pulseLoop.start();
+      shakeLoop.start();
+      return () => {
+        pulseLoop.stop();
+        shakeLoop.stop();
+      };
     } else {
       pulseAnim.setValue(1);
       shakeAnim.setValue(0);
