@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { StatusBar, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StatusBar, StyleSheet, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -53,10 +53,28 @@ function AppNavigator() {
 function MainApp() {
   const { colors, theme } = useTheme();
   const isDarkTheme = theme === 'DARK' || theme === 'NEON';
+  const [dbError, setDbError] = useState(false);
 
   useEffect(() => {
-    initDB();
+    const success = initDB();
+    if (!success) {
+      setDbError(true);
+      console.error('فشل تهيئة قاعدة البيانات — التطبيق لن يعمل بشكل صحيح');
+    }
   }, []);
+
+  if (dbError) {
+    return (
+      <View style={[styles.container, styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorTitle, { color: colors.danger ?? '#FF4444' }]}>
+          خطأ في التهيئة
+        </Text>
+        <Text style={[styles.errorMessage, { color: colors.textMuted }]}>
+          تعذّر تهيئة قاعدة البيانات. يرجى إغلاق التطبيق وإعادة فتحه.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -83,4 +101,20 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
 });
