@@ -24,10 +24,11 @@ export const SpyGuessScreen: React.FC = () => {
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // إعداد الكلمات وبدء المؤقت
   useEffect(() => {
-    // Get the category and random words for guessing
     const category = CATEGORIES.find((c) => c.id === categoryId);
     if (!category) return;
 
@@ -35,13 +36,10 @@ export const SpyGuessScreen: React.FC = () => {
     const randomWords = shuffleArray(otherWords).slice(0, 5);
     setShuffledWords(shuffleArray([...randomWords, correctWord]));
 
-    // Start timer
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          // Time's up - spy loses
           if (timerRef.current) clearInterval(timerRef.current);
-          handleGuess(correctWord, true); // Wrong guess (timeout)
           return 0;
         }
         if (prev <= 10) {
@@ -56,6 +54,15 @@ export const SpyGuessScreen: React.FC = () => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // مراقبة انتهاء الوقت بشكل منفصل — لا navigation داخل setState
+  useEffect(() => {
+    if (timeLeft === 0 && !timedOut) {
+      setTimedOut(true);
+      handleGuess(correctWord, true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
 
   const handleGuess = (word: string, _isTimeout = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
