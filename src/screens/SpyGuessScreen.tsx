@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Timer, AlertTriangle, ArrowLeft } from 'lucide-react-native';
+import { Timer, AlertTriangle, ArrowLeft, Zap, Eye, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
 import { hapticLight, hapticSuccess, hapticError, hapticWarning } from '../utils/haptics';
+import { PopInView, SlideInBounceView, PulseView, FloatingView, ShakeView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SpyGuessRouteProp = RouteProp<RootStackParamList, 'SpyGuess'>;
@@ -88,32 +89,35 @@ export const SpyGuessScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>فرصة الجاسوس الأخيرة</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-          خمّن الكلمة السرية للفوز!
-        </Text>
-      </View>
+      <PopInView delay={50}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>🕵️ فرصة الجاسوس الأخيرة</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            خمّن الكلمة السرية للفوز!
+          </Text>
+        </View>
+      </PopInView>
 
       {/* Timer */}
-      <View style={[styles.timerCard, { backgroundColor: isUrgent ? colors.danger : colors.card, borderColor: isUrgent ? colors.danger : colors.border }]}>
-        <Timer size={24} color={isUrgent ? '#FFF' : colors.accent} />
-        <Text style={[styles.timerText, { color: isUrgent ? '#FFF' : colors.text }]}>
-          {formatTime(timeLeft)}
-        </Text>
-        {isUrgent && (
-          <View style={styles.urgentContainer}>
-            <AlertTriangle size={16} color="#FFF" />
-            <Text style={styles.urgentText}>أسرع!</Text>
-          </View>
-        )}
-      </View>
+      <PopInView delay={100}>
+        <BouncyTimerCard
+          timeLeft={timeLeft}
+          isUrgent={isUrgent}
+          formatTime={formatTime}
+          colors={colors}
+        />
+      </PopInView>
 
       {/* Spy Info */}
-      <View style={[styles.spyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.spyLabel, { color: colors.textMuted }]}>الجاسوس:</Text>
-        <Text style={[styles.spyName, { color: colors.danger }]}>{spies.join('، ')}</Text>
-      </View>
+      <PopInView delay={150}>
+        <View style={[styles.spyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.spyIconContainer, { backgroundColor: `${colors.danger}15` }]}>
+            <Eye size={24} color={colors.danger} />
+          </View>
+          <Text style={[styles.spyLabel, { color: colors.textMuted }]}>الجاسوس:</Text>
+          <Text style={[styles.spyName, { color: colors.danger }]}>{spies.join('، ')}</Text>
+        </View>
+      </PopInView>
 
       {/* Word Options */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -121,46 +125,189 @@ export const SpyGuessScreen: React.FC = () => {
         {shuffledWords.map((word, index) => {
           const isSelected = selectedWord === word;
           return (
-            <Pressable
-              key={index}
-              onPress={() => {
-                hapticLight();
-                setSelectedWord(word);
-              }}
-              style={[
-                styles.wordOption,
-                {
-                  backgroundColor: isSelected ? `${colors.accent}20` : colors.card,
-                  borderColor: isSelected ? colors.accent : colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
-            </Pressable>
+            <PopInView key={`${word}-${index}`} delay={200 + index * 50}>
+              <BouncyWordOption
+                word={word}
+                selected={isSelected}
+                onPress={() => {
+                  hapticLight();
+                  setSelectedWord(word);
+                }}
+                colors={colors}
+              />
+            </PopInView>
           );
         })}
       </ScrollView>
 
       {/* Confirm Button */}
-      <View style={styles.footer}>
-        <Pressable
-          onPress={() => selectedWord && handleGuess(selectedWord)}
-          disabled={!selectedWord}
-          style={[
-            styles.confirmButton,
-            {
-              backgroundColor: selectedWord ? colors.accent : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <Text style={[styles.confirmButtonText, { color: selectedWord ? '#000' : colors.textMuted }]}>
-            تأكيد الاختيار
-          </Text>
-          <ArrowLeft size={20} color={selectedWord ? '#000' : colors.textMuted} />
-        </Pressable>
-      </View>
+      <SlideInBounceView delay={500}>
+        <View style={styles.footer}>
+          <BouncyConfirmButton
+            selectedWord={selectedWord}
+            onPress={() => selectedWord && handleGuess(selectedWord)}
+            colors={colors}
+          />
+        </View>
+      </SlideInBounceView>
     </View>
+  );
+};
+
+// Bouncy Timer Card
+interface BouncyTimerCardProps {
+  timeLeft: number;
+  isUrgent: boolean;
+  formatTime: (seconds: number) => string;
+  colors: any;
+}
+
+const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, formatTime, colors }) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isUrgent) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.spring(pulseAnim, { toValue: 1.1, tension: 300, friction: 8, useNativeDriver: true }),
+          Animated.spring(pulseAnim, { toValue: 1, tension: 300, friction: 8, useNativeDriver: true }),
+        ])
+      ).start();
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shakeAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: -1, duration: 50, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+  }, [isUrgent]);
+
+  return (
+    <Animated.View style={[
+      styles.timerCard,
+      {
+        backgroundColor: isUrgent ? colors.danger : colors.card,
+        borderColor: isUrgent ? colors.danger : colors.border,
+        transform: [
+          { scale: pulseAnim },
+          { translateX: shakeAnim.interpolate({ inputRange: [-2, 2], outputRange: [-4, 4] }) },
+        ],
+      },
+    ]}>
+      <Timer size={28} color={isUrgent ? '#FFF' : colors.accent} />
+      <Text style={[styles.timerText, { color: isUrgent ? '#FFF' : colors.text }]}>
+        {formatTime(timeLeft)}
+      </Text>
+      {isUrgent && (
+        <View style={styles.urgentContainer}>
+          <AlertTriangle size={18} color="#FFF" />
+          <Text style={styles.urgentText}>أسرع!</Text>
+        </View>
+      )}
+    </Animated.View>
+  );
+};
+
+// Bouncy Word Option
+interface BouncyWordOptionProps {
+  word: string;
+  selected: boolean;
+  onPress: () => void;
+  colors: any;
+}
+
+const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onPress, colors }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (selected) {
+      Animated.spring(checkScale, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    } else {
+      checkScale.setValue(0);
+    }
+  }, [selected]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.wordOption,
+          {
+            backgroundColor: selected ? `${colors.accent}15` : colors.card,
+            borderColor: selected ? colors.accent : colors.border,
+          },
+        ]}
+      >
+        <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
+        {selected && (
+          <Animated.View style={[styles.checkIcon, { transform: [{ scale: checkScale }] }]}>
+            <Zap size={20} color={colors.accent} />
+          </Animated.View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// Bouncy Confirm Button
+interface BouncyConfirmButtonProps {
+  selectedWord: string | null;
+  onPress: () => void;
+  colors: any;
+}
+
+const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord, onPress, colors }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    if (!selectedWord) return;
+    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        disabled={!selectedWord}
+        style={[
+          styles.confirmButton,
+          {
+            backgroundColor: selectedWord ? colors.accent : colors.card,
+            borderColor: colors.border,
+            opacity: selectedWord ? 1 : 0.6,
+          },
+        ]}
+      >
+        {selectedWord && <Sparkles size={20} color="#000" />}
+        <Text style={[styles.confirmButtonText, { color: selectedWord ? '#000' : colors.textMuted }]}>
+          تأكيد الاختيار
+        </Text>
+        <ArrowLeft size={22} color={selectedWord ? '#000' : colors.textMuted} />
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -169,17 +316,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 12,
+    paddingTop: 16,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
   },
   headerSubtitle: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 6,
   },
   timerCard: {
     flexDirection: 'row-reverse',
@@ -187,13 +334,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 16,
     marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
+    padding: 18,
+    borderRadius: 20,
     borderWidth: 2,
-    gap: 12,
+    gap: 14,
   },
   timerText: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
   },
@@ -204,24 +351,32 @@ const styles = StyleSheet.create({
   },
   urgentText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   spyCard: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 12,
+  },
+  spyIconContainer: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    borderWidth: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   spyLabel: {
-    fontSize: 12,
+    fontSize: 13,
   },
   spyName: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 4,
   },
   scrollView: {
     flex: 1,
@@ -232,20 +387,28 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     marginBottom: 12,
     textAlign: 'right',
+    fontWeight: '500',
   },
   wordOption: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 18,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     marginBottom: 10,
   },
   wordText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
+    flex: 1,
+  },
+  checkIcon: {
+    marginLeft: 10,
   },
   footer: {
     padding: 16,
@@ -254,13 +417,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 54,
-    borderRadius: 14,
-    borderWidth: 1,
+    height: 58,
+    borderRadius: 18,
+    borderWidth: 1.5,
     gap: 10,
   },
   confirmButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

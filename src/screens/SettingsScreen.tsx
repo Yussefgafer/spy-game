@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, Modal, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, Text, View, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
 import { useTheme, ThemeType } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { clearDatabase } from '../database/sqlite';
-import { hapticLight, hapticWarning } from '../utils/haptics';
+import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
+import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const THEME_OPTIONS: { key: ThemeType; label: string; description: string; Icon: typeof Moon }[] = [
-  { key: 'DARK', label: 'داكن', description: 'مظهر داكن مريح', Icon: Moon },
-  { key: 'LIGHT', label: 'مضيء', description: 'مظهر فاتح تقليدي', Icon: Sun },
-  { key: 'NEON', label: 'نيون', description: 'مظهر نيون مستقبلي', Icon: Sparkles },
+const THEME_OPTIONS: { key: ThemeType; label: string; description: string; Icon: typeof Moon; emoji: string }[] = [
+  { key: 'DARK', label: 'داكن', description: 'مظهر داكن مريح للعين', Icon: Moon, emoji: '🌙' },
+  { key: 'LIGHT', label: 'مضيء', description: 'مظهر فاتح تقليدي', Icon: Sun, emoji: '☀️' },
+  { key: 'NEON', label: 'نيون', description: 'مظهر نيون مستقبلي', Icon: Sparkles, emoji: '✨' },
 ];
 
 export const SettingsScreen: React.FC = () => {
@@ -30,97 +31,307 @@ export const SettingsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ChevronRight size={24} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>الإعدادات</Text>
-        <View style={styles.backButton} />
-      </View>
+      <PopInView delay={50}>
+        <View style={styles.header}>
+          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ الإعدادات</Text>
+          <View style={styles.backButton} />
+        </View>
+      </PopInView>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Theme Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>المظهر</Text>
+        <PopInView delay={100}>
+          <View style={styles.sectionHeader}>
+            <Palette size={18} color={colors.accent} />
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>المظهر</Text>
+          </View>
+        </PopInView>
+        
         <View style={styles.themeOptions}>
-          {THEME_OPTIONS.map((option) => {
+          {THEME_OPTIONS.map((option, index) => {
             const IconComponent = option.Icon;
             const isSelected = theme === option.key;
 
             return (
-              <Pressable
-                key={option.key}
-                onPress={() => {
-                  hapticLight();
-                  setTheme(option.key);
-                }}
-                style={[
-                  styles.themeCard,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: isSelected ? colors.accent : colors.border,
-                  },
-                ]}
-              >
-                <View style={styles.themeInfo}>
-                  <IconComponent size={20} color={isSelected ? colors.accent : colors.textMuted} />
-                  <View style={styles.themeTexts}>
-                    <Text style={[styles.themeLabel, { color: isSelected ? colors.accent : colors.text }]}>
-                      {option.label}
-                    </Text>
-                    <Text style={[styles.themeDescription, { color: colors.textMuted }]}>
-                      {option.description}
-                    </Text>
-                  </View>
-                </View>
-                {isSelected && <Check size={20} color={colors.accent} />}
-              </Pressable>
+              <PopInView key={option.key} delay={150 + index * 50}>
+                <BouncyThemeCard
+                  option={option}
+                  isSelected={isSelected}
+                  IconComponent={IconComponent}
+                  colors={colors}
+                  onPress={() => {
+                    hapticSuccess();
+                    setTheme(option.key);
+                  }}
+                />
+              </PopInView>
             );
           })}
         </View>
 
         {/* Data Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 24 }]}>البيانات</Text>
-        <Pressable
-          onPress={() => {
-            hapticLight();
-            setShowClearModal(true);
-          }}
-          style={[styles.dangerCard, { backgroundColor: colors.card, borderColor: colors.danger }]}
-        >
-          <View style={styles.dangerContent}>
-            <Trash2 size={20} color={colors.danger} />
-            <Text style={[styles.dangerLabel, { color: colors.danger }]}>مسح جميع البيانات</Text>
+        <PopInView delay={350}>
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <Database size={18} color={colors.accent} />
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>البيانات</Text>
           </View>
-          <ChevronLeft size={20} color={colors.danger} />
-        </Pressable>
+        </PopInView>
+
+        <PopInView delay={400}>
+          <BouncyDangerCard
+            onPress={() => {
+              hapticLight();
+              setShowClearModal(true);
+            }}
+            colors={colors}
+          />
+        </PopInView>
+
+        {/* About Section */}
+        <PopInView delay={450}>
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <Info size={18} color={colors.accent} />
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>عن التطبيق</Text>
+          </View>
+        </PopInView>
+
+        <PopInView delay={500}>
+          <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.aboutTitle, { color: colors.text }]}>🕵️ لعبة الجاسوس</Text>
+            <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>الإصدار 1.0.0</Text>
+            <Text style={[styles.aboutDesc, { color: colors.textMuted }]}>
+              لعبة جماعية ممتعة حيث يحاول اللاعبون كشف الجاسوس بينهم!
+            </Text>
+          </View>
+        </PopInView>
       </ScrollView>
 
       {/* Clear Data Modal */}
       <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
-              <AlertTriangle size={32} color={colors.danger} />
+          <PopInView>
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <FloatingView distance={4} duration={2000}>
+                <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
+                  <AlertTriangle size={36} color={colors.danger} />
+                </View>
+              </FloatingView>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>⚠️ تنبيه هام</Text>
+              <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
+                سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً!
+              </Text>
+              <View style={styles.modalButtons}>
+                <BouncyModalButton
+                  onPress={() => setShowClearModal(false)}
+                  colors={colors}
+                  label="إلغاء"
+                  variant="cancel"
+                />
+                <BouncyModalButton
+                  onPress={handleClearData}
+                  colors={colors}
+                  label="مسح"
+                  variant="danger"
+                />
+              </View>
             </View>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>تنبيه هام</Text>
-            <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
-              سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً
-            </Text>
-            <View style={styles.modalButtons}>
-              <Pressable
-                onPress={() => setShowClearModal(false)}
-                style={[styles.modalButton, { borderColor: colors.border }]}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.text }]}>إلغاء</Text>
-              </Pressable>
-              <Pressable onPress={handleClearData} style={[styles.modalButton, { backgroundColor: colors.danger }]}>
-                <Text style={styles.modalConfirmText}>مسح</Text>
-              </Pressable>
-            </View>
-          </View>
+          </PopInView>
         </View>
       </Modal>
     </View>
+  );
+};
+
+// Bouncy Back Button
+interface BouncyBackButtonProps {
+  onPress: () => void;
+  colors: any;
+}
+
+const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({ onPress, colors }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 0.85, tension: 400, friction: 10, useNativeDriver: true }),
+      Animated.spring(rotateAnim, { toValue: -15, tension: 300, friction: 8, useNativeDriver: true }),
+    ]).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }),
+      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View style={{
+      transform: [
+        { scale: scaleAnim },
+        { rotate: rotateAnim.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
+      ],
+    }}>
+      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={styles.backButton}>
+        <ChevronRight size={28} color={colors.text} />
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// Bouncy Theme Card
+interface BouncyThemeCardProps {
+  option: typeof THEME_OPTIONS[0];
+  isSelected: boolean;
+  IconComponent: typeof Moon;
+  colors: any;
+  onPress: () => void;
+}
+
+const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, IconComponent, colors, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isSelected) {
+      Animated.spring(checkScale, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    } else {
+      checkScale.setValue(0);
+    }
+  }, [isSelected]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.themeCard,
+          {
+            backgroundColor: colors.card,
+            borderColor: isSelected ? colors.accent : colors.border,
+          },
+        ]}
+      >
+        <View style={styles.themeInfo}>
+          <View style={[
+            styles.themeIconContainer,
+            { backgroundColor: isSelected ? `${colors.accent}15` : `${colors.textMuted}10` }
+          ]}>
+            <IconComponent size={22} color={isSelected ? colors.accent : colors.textMuted} />
+          </View>
+          <View style={styles.themeTexts}>
+            <Text style={[styles.themeLabel, { color: isSelected ? colors.accent : colors.text }]}>
+              {option.emoji} {option.label}
+            </Text>
+            <Text style={[styles.themeDescription, { color: colors.textMuted }]}>
+              {option.description}
+            </Text>
+          </View>
+        </View>
+        {isSelected && (
+          <Animated.View style={{ transform: [{ scale: checkScale }] }}>
+            <View style={[styles.checkContainer, { backgroundColor: colors.accent }]}>
+              <Check size={16} color="#000" />
+            </View>
+          </Animated.View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// Bouncy Danger Card
+interface BouncyDangerCardProps {
+  onPress: () => void;
+  colors: any;
+}
+
+const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[styles.dangerCard, { backgroundColor: colors.card, borderColor: colors.danger }]}
+      >
+        <View style={styles.dangerContent}>
+          <View style={[styles.dangerIconContainer, { backgroundColor: `${colors.danger}15` }]}>
+            <Trash2 size={22} color={colors.danger} />
+          </View>
+          <Text style={[styles.dangerLabel, { color: colors.danger }]}>🗑️ مسح جميع البيانات</Text>
+        </View>
+        <ChevronLeft size={22} color={colors.danger} />
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// Bouncy Modal Button
+interface BouncyModalButtonProps {
+  onPress: () => void;
+  colors: any;
+  label: string;
+  variant: 'cancel' | 'danger';
+}
+
+const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, label, variant }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.modalButton,
+          variant === 'cancel'
+            ? { borderColor: colors.border, borderWidth: 1.5 }
+            : { backgroundColor: colors.danger },
+        ]}
+      >
+        <Text style={[
+          styles.modalButtonText,
+          { color: variant === 'cancel' ? colors.text : '#FFF' }
+        ]}>
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -132,18 +343,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 12,
     paddingBottom: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
   },
   scrollView: {
@@ -152,11 +363,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+  sectionHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 12,
-    textAlign: 'right',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   themeOptions: {
     gap: 10,
@@ -165,75 +380,116 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
   },
   themeInfo: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
+  },
+  themeIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   themeTexts: {
     alignItems: 'flex-end',
   },
   themeLabel: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
   themeDescription: {
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 2,
+  },
+  checkContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dangerCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1.5,
   },
   dangerContent: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
+  },
+  dangerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dangerLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
+  },
+  aboutCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+  },
+  aboutTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  aboutVersion: {
+    fontSize: 13,
+    marginTop: 6,
+  },
+  aboutDesc: {
+    fontSize: 14,
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   modalContent: {
     width: '100%',
-    maxWidth: 320,
-    borderRadius: 20,
-    padding: 24,
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 28,
     alignItems: 'center',
   },
   modalIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   modalMessage: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    lineHeight: 24,
+    marginBottom: 28,
   },
   modalButtons: {
     flexDirection: 'row-reverse',
@@ -242,19 +498,13 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
   },
-  modalCancelText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  modalConfirmText: {
-    fontSize: 15,
+  modalButtonText: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
   },
 });

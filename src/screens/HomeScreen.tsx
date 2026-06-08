@@ -1,11 +1,12 @@
-import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useRef } from 'react';
+import { StyleSheet, Text, View, Animated, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Play, Trophy, History, Settings } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
-import { hapticLight } from '../utils/haptics';
+import { hapticLight, hapticSuccess } from '../utils/haptics';
+import { PopInView, FloatingView, PulseView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -19,74 +20,256 @@ export const HomeScreen: React.FC = () => {
       screen: 'Setup' as const,
       Icon: Play,
       color: '#10B981',
+      emoji: '🎮',
     },
     {
       label: 'سجل الأبطال',
       screen: 'Leaderboard' as const,
       Icon: Trophy,
       color: '#F59E0B',
+      emoji: '🏆',
     },
     {
       label: 'تاريخ المباريات',
       screen: 'History' as const,
       Icon: History,
       color: '#3B82F6',
+      emoji: '📜',
     },
   ];
 
   const handlePress = (screen: 'Setup' | 'Leaderboard' | 'History') => {
-    hapticLight();
+    hapticSuccess();
     navigation.navigate(screen);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>الجاسوس</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          من هو الجاسوس بينكم؟
-        </Text>
-      </View>
+      {/* Header with floating animation */}
+      <FloatingView distance={6} duration={2500}>
+        <View style={styles.header}>
+          <PopInView delay={100}>
+            <Text style={[styles.title, { color: colors.text }]}>🕵️ الجاسوس</Text>
+          </PopInView>
+          <PopInView delay={200}>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              من هو الجاسوس بينكم؟
+            </Text>
+          </PopInView>
+        </View>
+      </FloatingView>
 
-      {/* Menu Grid */}
+      {/* Menu Grid with staggered pop-in */}
       <View style={styles.menuGrid}>
         {menuItems.map((item, index) => {
           const IconComponent = item.Icon;
           return (
-            <Pressable
-              key={index}
-              onPress={() => handlePress(item.screen)}
-              style={({ pressed }) => [
-                styles.menuCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-              ]}
-            >
-              <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
-                <IconComponent size={28} color={item.color} />
-              </View>
-              <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
-            </Pressable>
+            <PopInView key={index} delay={300 + index * 100}>
+              <BouncyMenuCard
+                item={item}
+                colors={colors}
+                onPress={() => handlePress(item.screen)}
+              />
+            </PopInView>
           );
         })}
       </View>
 
       {/* Settings Button - Fixed at bottom */}
-      <View style={styles.footer}>
-        <Pressable
-          onPress={() => navigation.navigate('Settings')}
-          style={({ pressed }) => [
-            styles.settingsButton,
-            { backgroundColor: colors.card, borderColor: colors.border },
-            pressed && { opacity: 0.8 },
+      <PopInView delay={700}>
+        <View style={styles.footer}>
+          <BouncySettingsButton
+            colors={colors}
+            onPress={() => navigation.navigate('Settings')}
+          />
+        </View>
+      </PopInView>
+    </View>
+  );
+};
+
+// Separate component for menu card with its own animation state
+interface BouncyMenuCardProps {
+  item: {
+    label: string;
+    screen: 'Setup' | 'Leaderboard' | 'History';
+    Icon: typeof Play;
+    color: string;
+    emoji: string;
+  };
+  colors: any;
+  onPress: () => void;
+}
+
+const BouncyMenuCard: React.FC<BouncyMenuCardProps> = ({ item, colors, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const iconScale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        tension: 400,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconScale, {
+        toValue: 1.3,
+        tension: 500,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 500,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconScale, {
+        toValue: 1,
+        tension: 400,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(rotateAnim, {
+        toValue: 0,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const IconComponent = item.Icon;
+
+  return (
+    <Animated.View
+      style={[
+        {
+          transform: [
+            { scale: scaleAnim },
+            {
+              rotate: rotateAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '-1deg'],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        style={[
+          styles.menuCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: `${item.color}20`, transform: [{ scale: iconScale }] },
           ]}
         >
+          <IconComponent size={28} color={item.color} />
+        </Animated.View>
+        <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+        <Text style={styles.menuEmoji}>{item.emoji}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+// Settings button with bouncy animation
+interface BouncySettingsButtonProps {
+  colors: any;
+  onPress: () => void;
+}
+
+const BouncySettingsButton: React.FC<BouncySettingsButtonProps> = ({ colors, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        tension: 400,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(rotateAnim, {
+        toValue: 1,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 500,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.spring(rotateAnim, {
+        toValue: 0,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        {
+          transform: [
+            { scale: scaleAnim },
+            {
+              rotate: rotateAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '10deg'],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        style={[
+          styles.settingsButton,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <PulseView duration={2000} maxScale={1.1}>
           <Settings size={20} color={colors.textMuted} />
-          <Text style={[styles.settingsLabel, { color: colors.textMuted }]}>الإعدادات</Text>
-        </Pressable>
-      </View>
-    </View>
+        </PulseView>
+        <Text style={[styles.settingsLabel, { color: colors.textMuted }]}>الإعدادات</Text>
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -96,12 +279,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingTop: 30,
+    paddingBottom: 40,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: 'bold',
     marginBottom: 8,
   },
@@ -116,14 +299,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
     gap: 16,
   },
   iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -131,6 +314,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     flex: 1,
+  },
+  menuEmoji: {
+    fontSize: 24,
   },
   footer: {
     paddingVertical: 20,
@@ -142,7 +328,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     gap: 10,
   },
