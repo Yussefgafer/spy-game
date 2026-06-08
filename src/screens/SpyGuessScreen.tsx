@@ -4,8 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Timer, AlertTriangle, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
-import { CATEGORIES, shuffleArray } from '../../App';
+import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
 import { hapticLight, hapticSuccess, hapticError, hapticWarning } from '../utils/haptics';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -17,7 +16,7 @@ export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SpyGuessRouteProp>();
-  const { correctWord } = route.params;
+  const { categoryId, correctWord, players, spies, correctVoters } = route.params;
 
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
@@ -25,8 +24,10 @@ export const SpyGuessScreen: React.FC = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Get random words for guessing
-    const category = CATEGORIES[0]; // Default category
+    // Get the category and random words for guessing
+    const category = CATEGORIES.find((c) => c.id === categoryId);
+    if (!category) return;
+
     const otherWords = category.words.filter((w) => w !== correctWord);
     const randomWords = shuffleArray(otherWords).slice(0, 5);
     setShuffledWords(shuffleArray([...randomWords, correctWord]));
@@ -37,7 +38,7 @@ export const SpyGuessScreen: React.FC = () => {
         if (prev <= 1) {
           // Time's up - spy loses
           if (timerRef.current) clearInterval(timerRef.current);
-          handleGuess(correctWord); // Wrong guess
+          handleGuess(correctWord, true); // Wrong guess (timeout)
           return 0;
         }
         if (prev <= 10) {
@@ -50,9 +51,10 @@ export const SpyGuessScreen: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleGuess = (word: string) => {
+  const handleGuess = (word: string, _isTimeout = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
     
     const isCorrect = word === correctWord;
@@ -63,12 +65,14 @@ export const SpyGuessScreen: React.FC = () => {
       hapticError();
     }
 
-    // Navigate to results
+    // Navigate to results with all data
     navigation.navigate('Results', {
-      config: { category: 'places', spyCount: 1, players: [] },
-      spies: [],
+      players,
+      spies,
       secretWord: correctWord,
-      correctVoters: [],
+      categoryName: CATEGORIES.find((c) => c.id === categoryId)?.name || '',
+      categoryId,
+      correctVoters,
       spyGuessedCorrectly: isCorrect,
     });
   };
@@ -103,6 +107,12 @@ export const SpyGuessScreen: React.FC = () => {
             <Text style={styles.urgentText}>أسرع!</Text>
           </View>
         )}
+      </View>
+
+      {/* Spy Info */}
+      <View style={[styles.spyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.spyLabel, { color: colors.textMuted }]}>الجاسوس:</Text>
+        <Text style={[styles.spyName, { color: colors.danger }]}>{spies.join('، ')}</Text>
       </View>
 
       {/* Word Options */}
@@ -196,6 +206,22 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  spyCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  spyLabel: {
+    fontSize: 12,
+  },
+  spyName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   scrollView: {
     flex: 1,

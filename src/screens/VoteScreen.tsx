@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, User, Check, ArrowLeft } from 'lucide-react-native';
+import { User, Check, ArrowLeft, MinusCircle } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
@@ -14,21 +14,36 @@ export const VoteScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
-  const { players, spies } = route.params;
+  const { players, spies, secretWord, categoryId } = route.params;
 
-  // Exclude spies from voting
-  const voters = players.filter((p) => !spies.includes(p));
-  
+  // All players vote (including spies can vote to confuse)
   const [currentVoterIndex, setCurrentVoterIndex] = useState(0);
   const [votes, setVotes] = useState<Record<string, string>>({});
+  const [skippedVoters, setSkippedVoters] = useState<Set<string>>(new Set());
 
-  const currentVoter = voters[currentVoterIndex];
-  const isLastVoter = currentVoterIndex === voters.length - 1;
-  const hasVoted = votes[currentVoter] !== undefined;
+  const currentVoter = players[currentVoterIndex];
+  const isLastVoter = currentVoterIndex === players.length - 1;
+  const hasVoted = votes[currentVoter] !== undefined || skippedVoters.has(currentVoter);
 
   const handleVote = (suspectedSpy: string) => {
     hapticLight();
     setVotes({ ...votes, [currentVoter]: suspectedSpy });
+    setSkippedVoters(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(currentVoter);
+      return newSet;
+    });
+  };
+
+  const handleSkip = () => {
+    hapticLight();
+    const newSkipped = new Set(skippedVoters);
+    newSkipped.add(currentVoter);
+    setSkippedVoters(newSkipped);
+    // Remove any previous vote if exists
+    const newVotes = { ...votes };
+    delete newVotes[currentVoter];
+    setVotes(newVotes);
   };
 
   const handleNext = () => {
@@ -37,7 +52,7 @@ export const VoteScreen: React.FC = () => {
     hapticSuccess();
 
     if (isLastVoter) {
-      // Calculate results - who voted for actual spies
+      // Calculate results - who voted for actual spies (excluding skipped voters)
       const correctVoters: string[] = [];
       Object.entries(votes).forEach(([voter, suspected]) => {
         if (spies.includes(suspected)) {
@@ -45,14 +60,20 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
+      // Navigate to SpyGuess with all data
       navigation.navigate('SpyGuess', {
-        categoryId: 'places', // Will be overridden
-        correctWord: '', // Will be overridden
+        categoryId,
+        correctWord: secretWord,
+        players,
+        spies,
+        correctVoters,
       });
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);
     }
   };
+
+  const isSelected = (player: string) => votes[currentVoter] === player;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -60,13 +81,13 @@ export const VoteScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>مرحلة التصويت</Text>
         <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-          الناخب {currentVoterIndex + 1} من {voters.length}
+          مرر الهاتف لكل لاعب ليصوت سراً
         </Text>
       </View>
 
       {/* Progress Dots */}
       <View style={styles.progressContainer}>
-        {voters.map((_, index) => (
+        {players.map((_, index) => (
           <View
             key={index}
             style={[
@@ -86,10 +107,13 @@ export const VoteScreen: React.FC = () => {
       {/* Current Voter */}
       <View style={styles.voterSection}>
         <View style={[styles.voterCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <User size={28} color={colors.accent} />
+          <User size={32} color={colors.accent} />
           <Text style={[styles.voterName, { color: colors.text }]}>{currentVoter}</Text>
           <Text style={[styles.voterInstruction, { color: colors.textMuted }]}>
             اختر من تشك أنه الجاسوس
+          </Text>
+          <Text style={[styles.voterCounter, { color: colors.textMuted }]}>
+            الناخب {currentVoterIndex + 1} من {players.length}
           </Text>
         </View>
       </View>
@@ -97,27 +121,42 @@ export const VoteScreen: React.FC = () => {
       {/* Voting Options */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>المشتبه بهم:</Text>
+        
         {players
           .filter((p) => p !== currentVoter)
-          .map((player) => {
-            const isSelected = votes[currentVoter] === player;
-            return (
-              <Pressable
-                key={player}
-                onPress={() => handleVote(player)}
-                style={[
-                  styles.playerOption,
-                  {
-                    backgroundColor: isSelected ? `${colors.accent}20` : colors.card,
-                    borderColor: isSelected ? colors.accent : colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.playerOptionText, { color: colors.text }]}>{player}</Text>
-                {isSelected && <Check size={20} color={colors.accent} />}
-              </Pressable>
-            );
-          })}
+          .map((player) => (
+            <Pressable
+              key={player}
+              onPress={() => handleVote(player)}
+              style={[
+                styles.playerOption,
+                {
+                  backgroundColor: isSelected(player) ? `${colors.accent}20` : colors.card,
+                  borderColor: isSelected(player) ? colors.accent : colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.playerOptionText, { color: colors.text }]}>{player}</Text>
+              {isSelected(player) && <Check size={20} color={colors.accent} />}
+            </Pressable>
+          ))}
+
+        {/* Skip Vote Option */}
+        <Pressable
+          onPress={handleSkip}
+          style={[
+            styles.skipOption,
+            {
+              backgroundColor: skippedVoters.has(currentVoter) ? `${colors.textMuted}20` : colors.card,
+              borderColor: skippedVoters.has(currentVoter) ? colors.textMuted : colors.border,
+            },
+          ]}
+        >
+          <MinusCircle size={20} color={colors.textMuted} />
+          <Text style={[styles.skipText, { color: colors.textMuted }]}>
+            أفضل عدم التصويت (لا تؤثر على نقاطك)
+          </Text>
+        </Pressable>
       </ScrollView>
 
       {/* Next Button */}
@@ -134,7 +173,7 @@ export const VoteScreen: React.FC = () => {
           ]}
         >
           <Text style={[styles.nextButtonText, { color: hasVoted ? '#000' : colors.textMuted }]}>
-            {isLastVoter ? 'التالي' : 'الناخب التالي'}
+            {isLastVoter ? 'متابعة' : 'الناخب التالي'}
           </Text>
           <ArrowLeft size={20} color={hasVoted ? '#000' : colors.textMuted} />
         </Pressable>
@@ -182,12 +221,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   voterName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     marginTop: 12,
   },
   voterInstruction: {
     fontSize: 14,
+    marginTop: 8,
+  },
+  voterCounter: {
+    fontSize: 12,
     marginTop: 8,
   },
   scrollView: {
@@ -214,6 +257,19 @@ const styles = StyleSheet.create({
   playerOptionText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  skipOption: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 16,
+    gap: 8,
+  },
+  skipText: {
+    fontSize: 14,
   },
   footer: {
     padding: 16,

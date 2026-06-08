@@ -1,20 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Users, ChevronRight, ArrowLeft } from 'lucide-react-native';
+import { Users, ArrowLeft, Clock, HelpCircle } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
-import { hapticLight } from '../utils/haptics';
+import { hapticLight, hapticWarning } from '../utils/haptics';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type GameplayRouteProp = RouteProp<RootStackParamList, 'Gameplay'>;
+
+const DEFAULT_TIME = 300; // 5 minutes in seconds
 
 export const GameplayScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<GameplayRouteProp>();
-  const { players } = route.params;
+  const { players, spies, secretWord, categoryName, categoryId } = route.params;
+
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_TIME);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          hapticWarning();
+          return 0;
+        }
+        if (prev <= 60) {
+          hapticWarning();
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isUrgent = timeLeft <= 60;
+
+  const handleEndQuestions = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    hapticLight();
+    navigation.navigate('Vote', { players, spies, secretWord, categoryName, categoryId });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -26,12 +65,20 @@ export const GameplayScreen: React.FC = () => {
         </Text>
       </View>
 
+      {/* Timer */}
+      <View style={[styles.timerCard, { backgroundColor: isUrgent ? colors.danger : colors.card, borderColor: isUrgent ? colors.danger : colors.border }]}>
+        <Clock size={20} color={isUrgent ? '#FFF' : colors.accent} />
+        <Text style={[styles.timerText, { color: isUrgent ? '#FFF' : colors.text }]}>
+          {formatTime(timeLeft)}
+        </Text>
+      </View>
+
       {/* Players */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.playersCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.playersHeader}>
             <Users size={20} color={colors.accent} />
-            <Text style={[styles.playersTitle, { color: colors.text }]}>اللاعبون</Text>
+            <Text style={[styles.playersTitle, { color: colors.text }]}>اللاعبون ({players.length})</Text>
           </View>
           {players.map((player, index) => (
             <View
@@ -46,19 +93,21 @@ export const GameplayScreen: React.FC = () => {
           ))}
         </View>
 
-        <Text style={[styles.instruction, { color: colors.textMuted }]}>
-          كل لاعب يسأل لاعباً آخر سؤالاً عن الكلمة. حاولوا كشف الجاسوس من خلال إجاباته!
-        </Text>
+        {/* Instructions Card */}
+        <View style={[styles.instructionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <HelpCircle size={20} color={colors.accent} />
+          <Text style={[styles.instructionTitle, { color: colors.text }]}>كيف تلعب</Text>
+          <Text style={[styles.instructionText, { color: colors.textMuted }]}>
+            كل لاعب يسأل لاعباً آخر سؤالاً عن الكلمة السرية.{'\n'}
+            حاولوا كشف الجاسوس من خلال إجاباته الغريبة!
+          </Text>
+        </View>
       </ScrollView>
 
       {/* End Button */}
       <View style={styles.footer}>
         <Pressable
-          onPress={() => {
-            hapticLight();
-            // For now, skip vote and go to spy guess
-            navigation.navigate('SpyGuess', { categoryId: 'places', correctWord: '' });
-          }}
+          onPress={handleEndQuestions}
           style={[styles.endButton, { backgroundColor: colors.accent }]}
         >
           <Text style={styles.endButtonText}>انتهت الأسئلة</Text>
@@ -85,6 +134,22 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     marginTop: 4,
+  },
+  timerCard: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 10,
+  },
+  timerText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
   },
   scrollView: {
     flex: 1,
@@ -116,11 +181,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'right',
   },
-  instruction: {
+  instructionCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: 'center',
+  },
+  instructionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  instructionText: {
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: 20,
+    marginTop: 8,
   },
   footer: {
     padding: 16,

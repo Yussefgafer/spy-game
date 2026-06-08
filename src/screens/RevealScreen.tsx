@@ -1,13 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { StyleSheet, Text, View, Pressable, Animated, Dimensions, Vibration } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Animated, Vibration } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Eye, EyeOff, ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
-
-const { width } = Dimensions.get('window');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RevealRouteProp = RouteProp<RootStackParamList, 'Reveal'>;
@@ -16,11 +14,10 @@ export const RevealScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RevealRouteProp>();
-  const { players, spies, secretWord, categoryName } = route.params;
+  const { players, spies, secretWord, categoryName, categoryId } = route.params;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
-  const [pressProgress, setPressProgress] = useState(0);
   
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -49,7 +46,6 @@ export const RevealScreen: React.FC = () => {
     let progress = 0;
     pressTimerRef.current = setInterval(() => {
       progress += 0.05;
-      setPressProgress(progress);
       Vibration.vibrate(20);
       
       if (progress >= 1) {
@@ -76,8 +72,6 @@ export const RevealScreen: React.FC = () => {
       toValue: 1,
       useNativeDriver: true,
     }).start();
-
-    setPressProgress(0);
   };
 
   const handleRevealComplete = () => {
@@ -99,11 +93,10 @@ export const RevealScreen: React.FC = () => {
     hapticLight();
     
     if (isLastPlayer) {
-      navigation.navigate('Gameplay', { players });
+      navigation.navigate('Gameplay', { players, spies, secretWord, categoryName, categoryId });
     } else {
       setCurrentIndex(currentIndex + 1);
       setIsRevealed(false);
-      setPressProgress(0);
       progressAnim.setValue(0);
       scaleAnim.setValue(1);
     }

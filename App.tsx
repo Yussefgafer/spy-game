@@ -26,14 +26,35 @@ export type RootStackParamList = {
     spies: string[];
     secretWord: string;
     categoryName: string;
+    categoryId: string;
   };
-  Gameplay: { players: string[] };
-  Vote: { players: string[]; spies: string[] };
-  SpyGuess: { categoryId: string; correctWord: string };
-  Results: {
-    config: { category: string; spyCount: number; players: string[] };
+  Gameplay: {
+    players: string[];
     spies: string[];
     secretWord: string;
+    categoryName: string;
+    categoryId: string;
+  };
+  Vote: {
+    players: string[];
+    spies: string[];
+    secretWord: string;
+    categoryName: string;
+    categoryId: string;
+  };
+  SpyGuess: {
+    categoryId: string;
+    correctWord: string;
+    players: string[];
+    spies: string[];
+    correctVoters: string[];
+  };
+  Results: {
+    players: string[];
+    spies: string[];
+    secretWord: string;
+    categoryName: string;
+    categoryId: string;
     correctVoters: string[];
     spyGuessedCorrectly: boolean;
   };

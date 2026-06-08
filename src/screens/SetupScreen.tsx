@@ -1,13 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, TextInput, Keyboard, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, Plus, X, Minus, Play } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
-import { CATEGORIES, shuffleArray } from '../../App';
+import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
 import { searchPlayers, addPlayer, Player } from '../database/sqlite';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
+import { loadPreferences, savePreferences } from '../utils/preferences';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -22,6 +22,20 @@ export const SetupScreen: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
   const [suggestions, setSuggestions] = useState<Player[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Load saved preferences on mount
+  useEffect(() => {
+    const loadSavedPrefs = async () => {
+      const prefs = await loadPreferences();
+      if (prefs) {
+        setPlayers(prefs.players);
+        setSelectedCategory(prefs.categoryId);
+        setSpyCount(prefs.spyCount);
+      }
+      setIsLoading(false);
+    };
+    loadSavedPrefs();
+  }, []);
 
   const handleSearchPlayers = (text: string) => {
     setPlayerName(text);
@@ -61,7 +75,7 @@ export const SetupScreen: React.FC = () => {
     setPlayers(players.filter((p) => p !== name));
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (players.length < 3) {
       hapticError();
       Alert.alert('تنبيه', 'الحد الأدنى 3 لاعبين');
@@ -69,6 +83,13 @@ export const SetupScreen: React.FC = () => {
     }
 
     hapticSuccess();
+
+    // Save preferences for next time
+    await savePreferences({
+      players,
+      categoryId: selectedCategory,
+      spyCount,
+    });
 
     // Shuffle and select spies
     const shuffledPlayers = shuffleArray(players);
@@ -84,8 +105,11 @@ export const SetupScreen: React.FC = () => {
       spies: selectedSpies,
       secretWord,
       categoryName: category?.name || '',
+      categoryId: selectedCategory,
     });
   };
+
+  const maxSpies = Math.max(1, Math.floor(players.length / 2) || 1);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -156,13 +180,16 @@ export const SetupScreen: React.FC = () => {
             <Pressable
               onPress={() => {
                 hapticLight();
-                setSpyCount(Math.min(Math.max(1, players.length - 1) || 1, spyCount + 1));
+                setSpyCount(Math.min(maxSpies, spyCount + 1));
               }}
               style={styles.counterButton}
             >
               <Plus size={24} color={colors.accent} />
             </Pressable>
           </View>
+          <Text style={[styles.counterHint, { color: colors.textMuted }]}>
+            الحد الأقصى: {maxSpies} جاسوس
+          </Text>
         </View>
 
         {/* Add Players */}
@@ -325,6 +352,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginHorizontal: 24,
+  },
+  counterHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
   },
   inputContainer: {
     flexDirection: 'row-reverse',

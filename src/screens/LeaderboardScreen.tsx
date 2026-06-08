@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, Trophy, Users, Target, ChevronLeft } from 'lucide-react-native';
+import { ChevronRight, Trophy, Users, Target } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { getLeaderboard, Player } from '../database/sqlite';
-import { hapticLight } from '../utils/haptics';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

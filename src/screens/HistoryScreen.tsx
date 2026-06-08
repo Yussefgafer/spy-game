@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, History, Eye, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react-native';
+import { ChevronRight, History, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { getHistory, Match } from '../database/sqlite';

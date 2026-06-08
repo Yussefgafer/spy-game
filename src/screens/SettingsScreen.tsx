@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, Pressable, Modal, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, X, Check } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check } from 'lucide-react-native';
 import { useTheme, ThemeType } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { clearDatabase } from '../database/sqlite';
-import { hapticLight, hapticSuccess, hapticWarning } from '../utils/haptics';
+import { hapticLight, hapticWarning } from '../utils/haptics';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
