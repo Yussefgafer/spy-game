@@ -89,9 +89,10 @@ nitrogen/
 # AI
 GEMINI.md
 
-# Lock files (keep pnpm-lock.yaml since project uses pnpm)
+# Lock files
 package-lock.json
 yarn.lock
-
+pnpm-workspace.yaml
 android
 ios
+pnpm-lock.yaml
