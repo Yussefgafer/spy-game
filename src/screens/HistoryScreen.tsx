@@ -1,126 +1,339 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { History, ChevronDown, Trophy, Clock, Users } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
+import type { RootStackParamList } from '../types/navigation';
 import { getHistory, Match } from '../database/sqlite';
-import { LiquidCard } from '../components/LiquidCard';
+import { hapticLight } from '../utils/haptics';
+import { PopInView, FloatingView } from '../components/BouncyAnimations';
+import { BouncyBackButton } from '../components/BouncyBackButton';
 
-interface HistoryScreenProps {
-  onBack: () => void;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onBack }) => {
+export const HistoryScreen: React.FC = () => {
   const { colors } = useTheme();
+  const navigation = useNavigation<NavigationProp>();
   const [history, setHistory] = useState<Match[]>([]);
-  const [expandedMatchId, setExpandedMatchId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     const data = getHistory();
     setHistory(data);
   }, []);
 
-  // دالة تنسيق التاريخ والوقت باللغة العربية بالكامل
-  const formatArabicDate = (isoString: string): string => {
-    try {
-      const date = new Date(isoString);
-      return new Intl.DateTimeFormat('ar-EG', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-      }).format(date);
-    } catch (e) {
-      return isoString;
-    }
-  };
+  const formatDate = (iso: string) => {
+    const date = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-  const toggleExpand = (id: number) => {
-    setExpandedMatchId(expandedMatchId === id ? null : id);
+    if (diff === 0) return 'اليوم';
+    if (diff === 1) return 'أمس';
+    if (diff < 7) return `منذ ${diff} أيام`;
+    return date.toLocaleDateString('ar-EG');
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.accent }]}>📜 تاريخ المباريات</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-        سجل بكافة الجولات التي لعبتموها وتفاصيل الفوز والنقاط:
-      </Text>
+      {/* Header */}
+      <PopInView delay={50}>
+        <View style={styles.header}>
+          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>📜 تاريخ المباريات</Text>
+          <View style={styles.backButton} />
+        </View>
+      </PopInView>
 
-      <ScrollView style={styles.scroll}>
-        {history.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>لا يوجد مباريات مسجلة بعد.</Text>
-        ) : (
-          history.map((match) => {
-            const isExpanded = expandedMatchId === match.id;
-            return (
-              <Pressable key={match.id} onPress={() => toggleExpand(match.id)}>
-                <LiquidCard style={[styles.matchCard, isExpanded && { borderColor: colors.accent }]}>
-                  <View style={styles.matchHeader}>
-                    <Text style={[styles.matchDate, { color: colors.textMuted }]}>
-                      {formatArabicDate(match.date)}
-                    </Text>
-                    <Text style={[styles.matchWord, { color: colors.text }]}>
-                      الكلمة: <Text style={{ color: colors.accent }}>{match.secret_word}</Text>
-                    </Text>
-                  </View>
+      {history.length === 0 ? (
+        <PopInView delay={150}>
+          <View style={styles.emptyContainer}>
+            <FloatingView distance={8} duration={2500}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: `${colors.accent}15` }]}>
+                <History size={48} color={colors.textMuted} />
+              </View>
+            </FloatingView>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد مباريات</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+              ابدأ أول مباراة لك! 🎮
+            </Text>
+          </View>
+        </PopInView>
+      ) : (
+        <>
+          {/* Stats */}
+          <PopInView delay={100}>
+            <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.statItem}>
+                <Trophy size={20} color={colors.accent} />
+                <Text style={[styles.statValue, { color: colors.text }]}>{history.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>مباراة</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.statItem}>
+                <Users size={20} color={colors.accent} />
+                <Text style={[styles.statValue, { color: colors.text }]}>
+                  {history.filter(m => m.winner === 'PLAYERS').length}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>فوز الأبرياء</Text>
+              </View>
+            </View>
+          </PopInView>
 
-                  <View style={styles.matchSummary}>
-                    <Text style={{ color: colors.text }}>
-                      الفائز: {match.winner === 'SPY' ? (
-                        <Text style={{ color: colors.danger }}>الجاسوس 🕵️‍♂️</Text>
-                      ) : (
-                        <Text style={{ color: colors.accent }}>الأبرياء 🛡️</Text>
-                      )}
-                    </Text>
-                    <Text style={{ color: colors.textMuted }}>اضغط للتفاصيل {isExpanded ? '▲' : '▼'}</Text>
-                  </View>
+          {/* List */}
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            {history.map((match, index) => {
+              const isExpanded = expandedId === match.id;
+              const isSpyWin = match.winner === 'SPY';
 
-                  {isExpanded && match.details && (
-                    <View style={[styles.detailsContainer, { borderTopColor: colors.border }]}>
-                      <Text style={[styles.detailsTitle, { color: colors.text }]}>تفاصيل اللاعبين:</Text>
-                      {match.details.map((detail, index) => (
-                        <View key={index} style={styles.detailRow}>
-                          <Text style={[styles.detailName, { color: colors.text }]}>{detail.player_name}</Text>
-                          <Text style={{ color: detail.role === 'SPY' ? colors.danger : colors.textMuted }}>
-                            {detail.role === 'SPY' ? 'جاسوس' : 'بريء'}
-                          </Text>
-                          <Text style={{ color: colors.accent }}>+{detail.points_gained} ن</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </LiquidCard>
-              </Pressable>
-            );
-          })
-        )}
-      </ScrollView>
-
-      <Pressable onPress={onBack}>
-        <LiquidCard style={[styles.backBtn, { borderColor: colors.border }]}>
-          <Text style={[styles.backBtnText, { color: colors.text }]}>رجوع للرئيسية 🏠</Text>
-        </LiquidCard>
-      </Pressable>
+              return (
+                <PopInView key={match.id} delay={150 + index * 50}>
+                  <BouncyMatchCard
+                    match={match}
+                    isExpanded={isExpanded}
+                    isSpyWin={isSpyWin}
+                    colors={colors}
+                    formatDate={formatDate}
+                    onPress={() => {
+                      hapticLight();
+                      setExpandedId(isExpanded ? null : match.id);
+                    }}
+                  />
+                </PopInView>
+              );
+            })}
+          </ScrollView>
+        </>
+      )}
     </View>
   );
 };
 
+// Bouncy Match Card
+interface BouncyMatchCardProps {
+  match: Match;
+  isExpanded: boolean;
+  isSpyWin: boolean;
+  colors: ThemeColors;
+  formatDate: (iso: string) => string;
+  onPress: () => void;
+}
+
+const BouncyMatchCard: React.FC<BouncyMatchCardProps> = ({ match, isExpanded, isSpyWin, colors, formatDate, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const expandAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(expandAnim, {
+      toValue: isExpanded ? 1 : 0,
+      tension: 300,
+      friction: 12,
+      useNativeDriver: false,
+    }).start();
+  }, [isExpanded]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.98, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <View style={[styles.matchCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={styles.matchHeader}>
+          <View style={styles.matchInfo}>
+            <View style={styles.wordRow}>
+              <Text style={[styles.secretWord, { color: colors.text }]}>{match.secret_word}</Text>
+              <View style={[styles.winnerBadge, { backgroundColor: isSpyWin ? `${colors.danger}20` : `${colors.accent}20` }]}>
+                <Text style={[styles.winnerText, { color: isSpyWin ? colors.danger : colors.accent }]}>
+                  {isSpyWin ? '🕵️ جاسوس' : '🎉 أبرياء'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.dateRow}>
+              <Clock size={14} color={colors.textMuted} />
+              <Text style={[styles.matchDate, { color: colors.textMuted }]}>{formatDate(match.date)}</Text>
+            </View>
+          </View>
+          <Animated.View style={{ transform: [{ rotate: expandAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
+            <ChevronDown size={22} color={colors.textMuted} />
+          </Animated.View>
+        </Pressable>
+
+        {isExpanded && match.details && (
+          <Animated.View style={[styles.detailsSection, { borderTopColor: colors.border, opacity: expandAnim }]}>
+            {match.details.map((detail, index) => (
+              <PopInView key={index} delay={index * 30}>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailName, { color: colors.text }]}>{detail.player_name}</Text>
+                  <View style={[
+                    styles.roleBadge,
+                    { backgroundColor: detail.role === 'SPY' ? `${colors.danger}15` : `${colors.accent}15` }
+                  ]}>
+                    <Text style={[styles.detailRole, { color: detail.role === 'SPY' ? colors.danger : colors.accent }]}>
+                      {detail.role === 'SPY' ? '🕵️ جاسوس' : '👤 بريء'}
+                    </Text>
+                  </View>
+                </View>
+              </PopInView>
+            ))}
+          </Animated.View>
+        )}
+      </View>
+    </Animated.View>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60 },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
-  scroll: { flex: 1, marginBottom: 20 },
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 16 },
-  matchCard: { marginBottom: 12, gap: 10 },
-  matchHeader: { alignItems: 'flex-end', gap: 4 },
-  matchDate: { fontSize: 12 },
-  matchWord: { fontSize: 16, fontWeight: 'bold' },
-  matchSummary: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: 8 },
-  detailsContainer: { borderTopWidth: 1, paddingTop: 12, marginTop: 8, gap: 8 },
-  detailsTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 4, textAlign: 'right' },
-  detailRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', paddingVertical: 4 },
-  detailName: { fontSize: 14, fontWeight: '600' },
-  backBtn: { height: 56, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  backBtnText: { fontSize: 16, fontWeight: 'bold' },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  statsCard: {
+    flexDirection: 'row-reverse',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1.5,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  matchCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  matchHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  matchInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  wordRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 10,
+  },
+  secretWord: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  matchDate: {
+    fontSize: 13,
+  },
+  dateRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  matchStatus: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+  },
+  winnerBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  winnerText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailsSection: {
+    borderTopWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  detailRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailName: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  roleBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  detailRole: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    marginTop: 8,
+    textAlign: 'center',
+  },
 });
