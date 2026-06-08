@@ -220,6 +220,8 @@ export const SetupScreen: React.FC = () => {
                   <Pressable
                     key={player.id}
                     onPress={() => handleAddPlayer(player.name)}
+                    accessibilityLabel={`أضف ${player.name} للاعبين`}
+                    accessibilityRole="button"
                     style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
                   >
                     <Text style={[styles.suggestionText, { color: colors.text }]}>{player.name}</Text>
@@ -304,6 +306,9 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({ label, selected
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel={`اختر فئة: ${label}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.categoryChip,
           {
@@ -345,6 +350,8 @@ const BouncyCounterButton: React.FC<BouncyCounterButtonProps> = ({ icon, onPress
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel="زر المحرر"
+        accessibilityRole="button"
         style={[styles.counterButton, { backgroundColor: `${color}20` }]}
       >
         {icon}
@@ -415,7 +422,11 @@ const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) =>
         { rotate: rotateAnim.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }) },
       ],
     }}>
-      <Pressable style={[styles.addButton, { backgroundColor: colors.accent }]}>
+      <Pressable
+        onPress={onPress}
+        accessibilityLabel="أضف لاعب جديد"
+        accessibilityRole="button"
+        style={[styles.addButton, { backgroundColor: colors.accent }]}
         <Plus size={24} color="#000" />
       </Pressable>
     </Animated.View>
@@ -447,7 +458,11 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
     <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
       <View style={[styles.playerItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.playerName, { color: colors.text }]}>{name}</Text>
-        <Pressable onPress={handleRemove} style={styles.removeButton}>
+        <Pressable
+          onPress={handleRemove}
+          accessibilityLabel={`حذف ${name} من اللاعبين`}
+          accessibilityRole="button"
+          style={styles.removeButton}
           <X size={20} color={colors.danger} />
         </Pressable>
       </View>
@@ -483,6 +498,9 @@ const BouncyStartButton: React.FC<BouncyStartButtonProps> = ({ onPress, disabled
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={disabled}
+        accessibilityLabel="ابدأ اللعبة"
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={[
           styles.startButton,
           {

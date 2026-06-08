@@ -265,6 +265,9 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel={`اختر الكلمة: ${word}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.wordOption,
           {
@@ -311,6 +314,9 @@ const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord,
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={!selectedWord}
+        accessibilityLabel="تأكيد الكلمة المختارة"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !selectedWord }}
         style={[
           styles.confirmButton,
           {

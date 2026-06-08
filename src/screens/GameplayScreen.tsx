@@ -145,6 +145,9 @@ export const GameplayScreen: React.FC = () => {
             <PopInView delay={100}>
               <Pressable
                 onPress={toggleTimerEnabled}
+                accessibilityLabel={timerEnabled ? 'إيقاف المؤقت' : 'تشغيل المؤقت'}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: timerEnabled }}
                 style={[styles.timerToggleBtn, { backgroundColor: timerEnabled ? `${colors.accent}20` : colors.card, borderColor: timerEnabled ? colors.accent : colors.border }]}
               >
                 <Clock size={20} color={timerEnabled ? colors.accent : colors.textMuted} />
@@ -316,7 +319,13 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, i
       )}
       
       {/* Pause/Play button */}
-      <Pressable onPressIn={handlePressIn} onPress={onTogglePause} style={styles.pauseBtn}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPress={onTogglePause}
+        accessibilityLabel={isPaused ? 'استئناف اللعبة' : 'إيقاف اللعبة مؤقتاً'}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: isPaused }}
+        style={styles.pauseBtn}
         {isPaused ? (
           <Play size={22} color={isUrgent ? '#FFF' : colors.accent} fill={isUrgent ? '#FFF' : colors.accent} />
         ) : (
@@ -395,6 +404,8 @@ const BouncyEndButton: React.FC<BouncyEndButtonProps> = ({ onPress, colors }) =>
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel="انتهت الأسئلة — الانتقال للتصويت"
+        accessibilityRole="button"
         style={[styles.endButton, { backgroundColor: colors.accent }]}
       >
         <Zap size={22} color="#000" />

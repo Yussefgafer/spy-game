@@ -298,6 +298,9 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel={`صوّت على ${player}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.playerOption,
           {
@@ -342,6 +345,9 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel="أفضل عدم التصويت"
+        accessibilityRole="radio"
+        accessibilityState={{ selected: skipped }}
         style={[
           styles.skipOption,
           {
@@ -400,6 +406,9 @@ const BouncyNextButton: React.FC<BouncyNextButtonProps> = ({ onPress, disabled, 
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={disabled}
+        accessibilityLabel={isLastVoter ? 'الانتقال لإظهار النتائج' : 'الانتقال للناخب التالي'}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={[
           styles.nextButton,
           {
