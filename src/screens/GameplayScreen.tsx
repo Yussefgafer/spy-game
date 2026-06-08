@@ -25,6 +25,7 @@ export const GameplayScreen: React.FC = () => {
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const [timerExpired, setTimerExpired] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningTriggeredRef = useRef(false);
 
@@ -43,17 +44,15 @@ export const GameplayScreen: React.FC = () => {
     loadTimerSetting();
   }, []);
 
-  // Timer effect
+  // Timer effect — لا side effects داخل setTimeLeft
   useEffect(() => {
     if (timerActive && timerEnabled) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             if (timerRef.current) clearInterval(timerRef.current);
-            handleEndQuestions();
             return 0;
           }
-          // Haptic warning at 30 seconds
           if (prev === 31 && !warningTriggeredRef.current) {
             warningTriggeredRef.current = true;
             hapticWarning();
@@ -68,6 +67,15 @@ export const GameplayScreen: React.FC = () => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, timerEnabled]);
+
+  // مراقبة انتهاء الوقت بشكل منفصل — لا navigation داخل setState
+  useEffect(() => {
+    if (timeLeft === 0 && timerEnabled && !timerExpired) {
+      setTimerExpired(true);
+      handleEndQuestions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
 
   const toggleTimerEnabled = async () => {
     hapticLight();
