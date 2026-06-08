@@ -1,0 +1,148 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📥 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔧 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 🏗️ Prebuild Android
+        run: npx expo prebuild --platform android --clean
+
+      - name: 🔑 Decode Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          else
+            echo "No keystore provided, building unsigned APK"
+          fi
+
+      - name: 🏗️ Build Release APK
+        run: |
+          cd android
+          if [ -f app/release.keystore ]; then
+            ./gradlew assembleRelease \
+              -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
+              -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+              -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
+              -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
+          else
+            ./gradlew assembleRelease
+          fi
+
+      - name: 📝 Rename APK
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          mv android/app/build/outputs/apk/release/app-release.apk spy-game-${VERSION}.apk || \
+          mv android/app/build/outputs/apk/release/app-universal-release.apk spy-game-${VERSION}.apk || \
+          mv android/app/build/outputs/apk/release/*.apk spy-game-${VERSION}.apk
+
+      - name: 🚀 Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Spy Game ${{ github.ref_name }}
+          body: |
+            ## 🕵️ Spy Game ${{ github.ref_name }}
+            
+            ### 📱 التحميل
+            - قم بتحميل ملف APK وتثبيته على جهازك الأندرويد
+            
+            ### 📝 ملاحظات التثبيت
+            - قد تحتاج للسماح بالتثبيت من مصادر غير معروفة
+            - يدعم Android 5.0 (API 21) وما فوق
+            
+            ### ✨ المميزات
+            - لعبة حفلات ممتعة بالعربية
+            - ثلاثة أنماط ألوان (فاتح، داكن، نيون)
+            - سجل الأبطال وتاريخ المباريات
+            - تصميم عصري مع رسوم متحركة سلسة
+          files: |
+            *.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-ios:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📥 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Prebuild iOS
+        run: npx expo prebuild --platform ios --clean
+
+      - name: 🏗️ Build iOS (No codesign)
+        run: |
+          cd ios
+          xcodebuild -workspace SpyGame.xcworkspace -scheme SpyGame -configuration Release -sdk iphoneos -archivePath build/SpyGame.xcarchive archive CODE_SIGNING_ALLOWED=NO
+        continue-on-error: true
+
+      - name: 📦 Create IPA (unsigned)
+        run: |
+          mkdir -p Payload
+          cp -r ios/build/SpyGame.xcarchive/Products/Applications/SpyGame.app Payload/ || true
+          if [ -d "Payload/SpyGame.app" ]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            zip -r spy-game-${VERSION}.ipa Payload
+          fi
+        continue-on-error: true
+
+      - name: 🚀 Upload iOS Build
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Spy Game ${{ github.ref_name }}
+          files: |
+            *.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
