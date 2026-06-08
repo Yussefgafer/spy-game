@@ -59,25 +59,19 @@
 
 ### المتطلبات
 - Node.js 18+
-- pnpm أو npm أو yarn
+- pnpm 
 - Expo CLI
-- محاكي أو جهاز حقيقي
 
 ### خطوات التثبيت
 
 ```bash
-# استنساخ المشروع
 git clone https://github.com/your-username/spy-game.git
 cd spy-game
 
 # تثبيت الاعتماديات
 pnpm install
-# أو
-npm install
 
 # تشغيل التطبيق
-pnpm start
-# أو
 npx expo start
 ```
 
@@ -133,51 +127,6 @@ pnpm web
 | تم القبض على الجاسوس + خمن الكلمة صحيح | الجاسوس |
 | لم يتم القبض على الجاسوس | الجاسوس |
 
----
-
-## 📁 هيكل المشروع
-
-```
-spy-game/
-├── App.tsx                 # نقطة الدخول الرئيسية
-├── src/
-│   ├── components/         # المكونات القابلة لإعادة الاستخدام
-│   │   ├── BouncyAnimations.tsx    # رسوم متحركة
-│   │   ├── BouncyButton.tsx        # زر مع تأثيرات
-│   │   ├── BouncyBackButton.tsx    # زر رجوع متحرك
-│   │   ├── HoldToReveal.tsx        # كشف بالضغط المطول
-│   │   ├── LiquidCard.tsx          # بطاقة سائلة الشكل
-│   │   ├── HowToPlayModal.tsx      # نافذة كيفية اللعب
-│   │   ├── AutoCompleteInput.tsx   # إدخال مع اقتراحات
-│   │   ├── EmptyState.tsx          # حالة فارغة
-│   │   └── ErrorBoundary.tsx       # معالج الأخطاء
-│   ├── screens/           # شاشات التطبيق
-│   │   ├── HomeScreen.tsx          # الشاشة الرئيسية
-│   │   ├── SetupScreen.tsx         # إعداد اللعبة
-│   │   ├── RevealScreen.tsx        # كشف الأدوار
-│   │   ├── GameplayScreen.tsx      # شاشة اللعب
-│   │   ├── VoteScreen.tsx          # شاشة التصويت
-│   │   ├── SpyGuessScreen.tsx      # تخمين الجاسوس
-│   │   ├── ResultsScreen.tsx       # النتائج
-│   │   ├── LeaderboardScreen.tsx   # سجل الأبطال
-│   │   ├── HistoryScreen.tsx       # تاريخ المباريات
-│   │   └── SettingsScreen.tsx      # الإعدادات
-│   ├── context/           # سياقات React
-│   │   └── ThemeContext.tsx        # سياق الثيم
-│   ├── constants/         # الثوابت
-│   │   └── words.ts                # فئات وكلمات اللعبة
-│   ├── types/             # أنواع TypeScript
-│   │   └── navigation.ts           # أنواع التنقل
-│   ├── database/          # قاعدة البيانات
-│   │   └── sqlite.ts               # إعداد SQLite
-│   └── utils/             # أدوات مساعدة
-│       ├── haptics.ts              # التنبيهات اللمسية
-│       ├── preferences.ts          # التفضيلات المحفوظة
-│       └── shuffle.ts              # خلط عشوائي
-├── app.json               # إعدادات Expo
-├── package.json           # الاعتماديات
-└── tsconfig.json          # إعدادات TypeScript
-```
 
 ---
 
@@ -193,22 +142,6 @@ spy-game/
 | **Expo Haptics** | التنبيهات اللمسية |
 | **Lucide Icons** | الأيقونات |
 | **React Native Animated** | الرسوم المتحركة |
-
----
-
-## 📱 لقطات الشاشة
-
-<div align="center">
-
-| الشاشة الرئيسية | إعداد اللعبة | كشف الأدوار |
-|:---------------:|:------------:|:-----------:|
-| 🏠 | ⚙️ | 🎭 |
-
-| اللعب | التصويت | النتائج |
-|:-----:|:-------:|:-------:|
-| 💬 | 🗳️ | 🏆 |
-
-</div>
 
 ---
 
