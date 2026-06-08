@@ -226,20 +226,25 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, i
 
   useEffect(() => {
     if (isUrgent && !isPaused) {
-      Animated.loop(
+      const pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.spring(pulseAnim, { toValue: 1.08, tension: 300, friction: 8, useNativeDriver: true }),
           Animated.spring(pulseAnim, { toValue: 1, tension: 300, friction: 8, useNativeDriver: true }),
         ])
-      ).start();
-
-      Animated.loop(
+      );
+      const shakeLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(shakeAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: -1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      pulseLoop.start();
+      shakeLoop.start();
+      return () => {
+        pulseLoop.stop();
+        shakeLoop.stop();
+      };
     } else {
       pulseAnim.setValue(1);
       shakeAnim.setValue(0);
