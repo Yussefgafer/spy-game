@@ -427,6 +427,7 @@ const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) =>
         accessibilityLabel="أضف لاعب جديد"
         accessibilityRole="button"
         style={[styles.addButton, { backgroundColor: colors.accent }]}
+      >
         <Plus size={24} color="#000" />
       </Pressable>
     </Animated.View>
@@ -463,6 +464,7 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
           accessibilityLabel={`حذف ${name} من اللاعبين`}
           accessibilityRole="button"
           style={styles.removeButton}
+        >
           <X size={20} color={colors.danger} />
         </Pressable>
       </View>

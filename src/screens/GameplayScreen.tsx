@@ -326,6 +326,7 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, i
         accessibilityRole="switch"
         accessibilityState={{ checked: isPaused }}
         style={styles.pauseBtn}
+      >
         {isPaused ? (
           <Play size={22} color={isUrgent ? '#FFF' : colors.accent} fill={isUrgent ? '#FFF' : colors.accent} />
         ) : (
