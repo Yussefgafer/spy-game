@@ -19,8 +19,11 @@ export const HistoryScreen: React.FC = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    const data = getHistory();
-    setHistory(data);
+    const load = async () => {
+      const data = await getHistory();
+      setHistory(data);
+    };
+    load();
   }, []);
 
   const formatDate = (iso: string) => {
