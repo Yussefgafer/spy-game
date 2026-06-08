@@ -2,11 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Trophy, RefreshCw, Home, Target, Users, Eye, CheckCircle, Sparkles, PartyPopper } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { RefreshCw, Home, Target, Users, Eye, CheckCircle, Sparkles } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { saveMatchResult } from '../database/sqlite';
-import { hapticLight, hapticSuccess } from '../utils/haptics';
+import { hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -144,7 +144,7 @@ export const ResultsScreen: React.FC = () => {
 // Bouncy Winner Card
 interface BouncyWinnerCardProps {
   spyWins: boolean;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, colors }) => {
@@ -198,7 +198,7 @@ interface BouncyInfoCardProps {
   label: string;
   value: string;
   valueColor: string;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyInfoCard: React.FC<BouncyInfoCardProps> = ({ icon, label, value, valueColor, colors }) => {
@@ -220,7 +220,7 @@ const BouncyInfoCard: React.FC<BouncyInfoCardProps> = ({ icon, label, value, val
 // Bouncy Correct Voters Card
 interface BouncyCorrectVotersCardProps {
   correctVoters: string[];
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ correctVoters, colors }) => {
@@ -243,7 +243,7 @@ interface BouncyPlayerRowProps {
   player: string;
   isSpy: boolean;
   votedCorrectly: boolean;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly, colors }) => {
@@ -273,7 +273,7 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedC
 // Bouncy Primary Button
 interface BouncyPrimaryButtonProps {
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
   label: string;
   icon: React.ReactNode;
 }
@@ -309,7 +309,7 @@ const BouncyPrimaryButton: React.FC<BouncyPrimaryButtonProps> = ({ onPress, colo
 // Bouncy Secondary Button
 interface BouncySecondaryButtonProps {
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
   label: string;
   icon: React.ReactNode;
 }

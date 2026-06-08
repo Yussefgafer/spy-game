@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, TextInput, Keyboard, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Plus, X, Minus, Play, Sparkles } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { Plus, X, Minus, Play, Sparkles } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
 import { searchPlayers, addPlayer, Player } from '../database/sqlite';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
 import { loadPreferences, savePreferences } from '../utils/preferences';
-import { PopInView, SlideInBounceView, SqueezeView } from '../components/BouncyAnimations';
+import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
+import { BouncyBackButton } from '../components/BouncyBackButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -23,8 +24,6 @@ export const SetupScreen: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
   const [suggestions, setSuggestions] = useState<Player[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
   // Load saved preferences on mount
   useEffect(() => {
     const loadSavedPrefs = async () => {
@@ -34,7 +33,6 @@ export const SetupScreen: React.FC = () => {
         setSelectedCategory(prefs.categoryId);
         setSpyCount(prefs.spyCount);
       }
-      setIsLoading(false);
     };
     loadSavedPrefs();
   }, []);
@@ -118,7 +116,7 @@ export const SetupScreen: React.FC = () => {
       {/* Header */}
       <PopInView delay={50}>
         <View style={styles.header}>
-          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
+          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} icon="chevronLeft" />
           <Text style={[styles.headerTitle, { color: colors.text }]}>إعداد المباراة</Text>
           <View style={styles.backButton} />
         </View>
@@ -259,51 +257,12 @@ export const SetupScreen: React.FC = () => {
   );
 };
 
-// Bouncy Back Button
-interface BouncyBackButtonProps {
-  onPress: () => void;
-  colors: any;
-}
-
-const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({ onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.85, tension: 400, friction: 10, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: -15, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-  };
-
-  return (
-    <Animated.View style={{
-      transform: [
-        { scale: scaleAnim },
-        { rotate: rotateAnim.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-      ],
-    }}>
-      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={styles.backButton}>
-        <ChevronLeft size={28} color={colors.text} />
-      </Pressable>
-    </Animated.View>
-  );
-};
-
 // Bouncy Category Chip
 interface BouncyCategoryChipProps {
   label: string;
   selected: boolean;
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({ label, selected, onPress, colors }) => {
@@ -395,7 +354,7 @@ const BouncyCounterButton: React.FC<BouncyCounterButtonProps> = ({ icon, onPress
 // Animated Counter Value
 interface AnimatedCounterProps {
   value: number;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, colors }) => {
@@ -422,7 +381,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, colors }) => {
 // Bouncy Add Button
 interface BouncyAddButtonProps {
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) => {
@@ -465,7 +424,7 @@ const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) =>
 interface BouncyPlayerItemProps {
   name: string;
   onRemove: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, colors }) => {
@@ -498,7 +457,7 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
 interface BouncyStartButtonProps {
   onPress: () => void;
   disabled: boolean;
-  colors: any;
+  colors: ThemeColors;
   canStart: boolean;
 }
 

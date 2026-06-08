@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
-import { useTheme, ThemeType } from '../context/ThemeContext';
+import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
+import { useTheme, ThemeType, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { clearDatabase } from '../database/sqlite';
 import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
-import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
+import { PopInView, FloatingView } from '../components/BouncyAnimations';
+import { BouncyBackButton } from '../components/BouncyBackButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -143,51 +144,12 @@ export const SettingsScreen: React.FC = () => {
   );
 };
 
-// Bouncy Back Button
-interface BouncyBackButtonProps {
-  onPress: () => void;
-  colors: any;
-}
-
-const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({ onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.85, tension: 400, friction: 10, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: -15, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-  };
-
-  return (
-    <Animated.View style={{
-      transform: [
-        { scale: scaleAnim },
-        { rotate: rotateAnim.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-      ],
-    }}>
-      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={styles.backButton}>
-        <ChevronRight size={28} color={colors.text} />
-      </Pressable>
-    </Animated.View>
-  );
-};
-
 // Bouncy Theme Card
 interface BouncyThemeCardProps {
   option: typeof THEME_OPTIONS[0];
   isSelected: boolean;
   IconComponent: typeof Moon;
-  colors: any;
+  colors: ThemeColors;
   onPress: () => void;
 }
 
@@ -257,7 +219,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
 // Bouncy Danger Card
 interface BouncyDangerCardProps {
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) => {
@@ -295,7 +257,7 @@ const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) 
 // Bouncy Modal Button
 interface BouncyModalButtonProps {
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
   label: string;
   variant: 'cancel' | 'danger';
 }

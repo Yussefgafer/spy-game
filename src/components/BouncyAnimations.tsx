@@ -112,7 +112,7 @@ export const FloatingView: React.FC<FloatingViewProps> = ({
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
           toValue: 1,
@@ -127,7 +127,12 @@ export const FloatingView: React.FC<FloatingViewProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
   }, []);
 
   const animatedStyle = {
@@ -167,7 +172,7 @@ export const PulseView: React.FC<PulseViewProps> = ({
   const scaleAnim = useRef(new Animated.Value(minScale)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, {
           toValue: maxScale,
@@ -182,7 +187,12 @@ export const PulseView: React.FC<PulseViewProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
   }, []);
 
   return (
@@ -291,8 +301,24 @@ export const RotateBounceView: React.FC<RotateBounceViewProps> = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    let rotateLoop: Animated.CompositeAnimation | null = null;
+    let scaleLoop: Animated.CompositeAnimation | null = null;
+
     if (rotate) {
-      Animated.loop(
+      scaleLoop = Animated.loop(
+        Animated.sequence([
+          Animated.spring(scaleAnim, {
+            toValue: 1.2,
+            ...SPRING_CONFIG.bouncy,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            ...SPRING_CONFIG.bouncy,
+          }),
+        ])
+      );
+
+      rotateLoop = Animated.loop(
         Animated.parallel([
           Animated.timing(rotateAnim, {
             toValue: 1,
@@ -300,24 +326,19 @@ export const RotateBounceView: React.FC<RotateBounceViewProps> = ({
             easing: Easing.linear,
             useNativeDriver: true,
           }),
-          Animated.loop(
-            Animated.sequence([
-              Animated.spring(scaleAnim, {
-                toValue: 1.2,
-                ...SPRING_CONFIG.bouncy,
-              }),
-              Animated.spring(scaleAnim, {
-                toValue: 1,
-                ...SPRING_CONFIG.bouncy,
-              }),
-            ])
-          ),
+          scaleLoop,
         ])
-      ).start();
+      );
+      rotateLoop.start();
     } else {
       rotateAnim.setValue(0);
       scaleAnim.setValue(1);
     }
+
+    return () => {
+      rotateLoop?.stop();
+      scaleLoop?.stop();
+    };
   }, [rotate]);
 
   return (

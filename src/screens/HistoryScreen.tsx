@@ -2,12 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, History, ChevronDown, ChevronUp, Trophy, Clock, Users } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { History, ChevronDown, Trophy, Clock, Users } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { getHistory, Match } from '../database/sqlite';
-import { hapticLight, hapticSuccess } from '../utils/haptics';
-import { PopInView, SlideInBounceView, FloatingView, PulseView } from '../components/BouncyAnimations';
+import { hapticLight } from '../utils/haptics';
+import { PopInView, FloatingView } from '../components/BouncyAnimations';
+import { BouncyBackButton } from '../components/BouncyBackButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -108,51 +109,12 @@ export const HistoryScreen: React.FC = () => {
   );
 };
 
-// Bouncy Back Button
-interface BouncyBackButtonProps {
-  onPress: () => void;
-  colors: any;
-}
-
-const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({ onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.85, tension: 400, friction: 10, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: -15, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-  };
-
-  return (
-    <Animated.View style={{
-      transform: [
-        { scale: scaleAnim },
-        { rotate: rotateAnim.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-      ],
-    }}>
-      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={styles.backButton}>
-        <ChevronRight size={28} color={colors.text} />
-      </Pressable>
-    </Animated.View>
-  );
-};
-
 // Bouncy Match Card
 interface BouncyMatchCardProps {
   match: Match;
   isExpanded: boolean;
   isSpyWin: boolean;
-  colors: any;
+  colors: ThemeColors;
   formatDate: (iso: string) => string;
   onPress: () => void;
 }

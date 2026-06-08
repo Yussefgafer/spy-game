@@ -9,7 +9,7 @@ import {
   StyleProp,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
+import { hapticLight } from '../utils/haptics';
 
 // Spring configurations for fidget toy feel
 const SPRING_CONFIG = {

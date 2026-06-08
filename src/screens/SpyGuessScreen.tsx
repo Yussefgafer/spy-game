@@ -3,10 +3,10 @@ import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-n
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Timer, AlertTriangle, ArrowLeft, Zap, Eye, Sparkles } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
 import { hapticLight, hapticSuccess, hapticError, hapticWarning } from '../utils/haptics';
-import { PopInView, SlideInBounceView, PulseView, FloatingView, ShakeView } from '../components/BouncyAnimations';
+import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SpyGuessRouteProp = RouteProp<RootStackParamList, 'SpyGuess'>;
@@ -159,7 +159,7 @@ interface BouncyTimerCardProps {
   timeLeft: number;
   isUrgent: boolean;
   formatTime: (seconds: number) => string;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, formatTime, colors }) => {
@@ -167,22 +167,32 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, f
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let pulseLoop: Animated.CompositeAnimation | null = null;
+    let shakeLoop: Animated.CompositeAnimation | null = null;
+
     if (isUrgent) {
-      Animated.loop(
+      pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.spring(pulseAnim, { toValue: 1.1, tension: 300, friction: 8, useNativeDriver: true }),
           Animated.spring(pulseAnim, { toValue: 1, tension: 300, friction: 8, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      pulseLoop.start();
 
-      Animated.loop(
+      shakeLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(shakeAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: -1, duration: 50, useNativeDriver: true }),
           Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      shakeLoop.start();
     }
+
+    return () => {
+      pulseLoop?.stop();
+      shakeLoop?.stop();
+    };
   }, [isUrgent]);
 
   return (
@@ -216,7 +226,7 @@ interface BouncyWordOptionProps {
   word: string;
   selected: boolean;
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onPress, colors }) => {
@@ -269,7 +279,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
 interface BouncyConfirmButtonProps {
   selectedWord: string | null;
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord, onPress, colors }) => {

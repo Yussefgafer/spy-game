@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, Animated, Vibration } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
@@ -36,7 +36,6 @@ export const RevealScreen: React.FC = () => {
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
       }
-      Vibration.cancel();
     };
   }, []);
 
@@ -47,7 +46,6 @@ export const RevealScreen: React.FC = () => {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
       }
-      Vibration.cancel();
     };
   }, [currentIndex]);
 
@@ -68,8 +66,8 @@ export const RevealScreen: React.FC = () => {
       useNativeDriver: true,
     }).start();
 
-    // Single vibration at start
-    Vibration.vibrate(50);
+    // Haptic feedback at start
+    hapticLight();
 
     // Set timer for reveal
     revealTimerRef.current = setTimeout(() => {
@@ -87,9 +85,6 @@ export const RevealScreen: React.FC = () => {
       clearTimeout(revealTimerRef.current);
       revealTimerRef.current = null;
     }
-
-    // Stop any vibration
-    Vibration.cancel();
 
     // Reset progress animation
     Animated.timing(progressAnim, {
@@ -109,8 +104,7 @@ export const RevealScreen: React.FC = () => {
     revealTimerRef.current = null;
     setIsPressing(false);
     
-    // Stop vibration and do success haptic
-    Vibration.cancel();
+    // Success haptic
     hapticSuccess();
     
     setIsRevealed(true);
@@ -132,7 +126,6 @@ export const RevealScreen: React.FC = () => {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
       }
-      Vibration.cancel();
       
       setCurrentIndex(currentIndex + 1);
       setIsRevealed(false);

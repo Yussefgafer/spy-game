@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Animated, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Play, Trophy, History, Settings } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, FloatingView, PulseView } from '../components/BouncyAnimations';
@@ -62,7 +62,6 @@ export const HomeScreen: React.FC = () => {
       {/* Menu Grid with staggered pop-in */}
       <View style={styles.menuGrid}>
         {menuItems.map((item, index) => {
-          const IconComponent = item.Icon;
           return (
             <PopInView key={index} delay={300 + index * 100}>
               <BouncyMenuCard
@@ -97,7 +96,7 @@ interface BouncyMenuCardProps {
     color: string;
     emoji: string;
   };
-  colors: any;
+  colors: ThemeColors;
   onPress: () => void;
 }
 
@@ -196,7 +195,7 @@ const BouncyMenuCard: React.FC<BouncyMenuCardProps> = ({ item, colors, onPress }
 
 // Settings button with bouncy animation
 interface BouncySettingsButtonProps {
-  colors: any;
+  colors: ThemeColors;
   onPress: () => void;
 }
 

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { User, Check, ArrowLeft, MinusCircle, Vote } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { Check, ArrowLeft, MinusCircle, Vote } from 'lucide-react-native';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView, ShakeView } from '../components/BouncyAnimations';
@@ -160,7 +160,7 @@ export const VoteScreen: React.FC = () => {
 interface BouncyProgressDotProps {
   index: number;
   currentIndex: number;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyProgressDot: React.FC<BouncyProgressDotProps> = ({ index, currentIndex, colors }) => {
@@ -169,16 +169,23 @@ const BouncyProgressDot: React.FC<BouncyProgressDotProps> = ({ index, currentInd
   const isCurrent = index === currentIndex;
 
   useEffect(() => {
+    let animation: Animated.CompositeAnimation | null = null;
+
     if (isCurrent) {
-      Animated.loop(
+      animation = Animated.loop(
         Animated.sequence([
           Animated.spring(scaleAnim, { toValue: 1.5, tension: 300, friction: 8, useNativeDriver: true }),
           Animated.spring(scaleAnim, { toValue: 1, tension: 300, friction: 8, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      animation.start();
     } else {
       scaleAnim.setValue(1);
     }
+
+    return () => {
+      animation?.stop();
+    };
   }, [isCurrent]);
 
   const getBgColor = () => {
@@ -205,7 +212,7 @@ interface BouncyVoterCardProps {
   voter: string;
   voterNumber: number;
   totalVoters: number;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyVoterCard: React.FC<BouncyVoterCardProps> = ({ voter, voterNumber, totalVoters, colors }) => {
@@ -238,7 +245,7 @@ interface BouncyVoteOptionProps {
   player: string;
   selected: boolean;
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, onPress, colors }) => {
@@ -291,7 +298,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
 interface BouncySkipOptionProps {
   skipped: boolean;
   onPress: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, colors }) => {
@@ -334,7 +341,7 @@ interface BouncyNextButtonProps {
   onPress: () => void;
   disabled: boolean;
   isLastVoter: boolean;
-  colors: any;
+  colors: ThemeColors;
 }
 
 const BouncyNextButton: React.FC<BouncyNextButtonProps> = ({ onPress, disabled, isLastVoter, colors }) => {
