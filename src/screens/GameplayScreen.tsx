@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Users, ArrowLeft, Clock, HelpCircle } from 'lucide-react-native';
+import { Users, ArrowLeft, HelpCircle } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../../App';
-import { hapticLight, hapticWarning } from '../utils/haptics';
+import { hapticLight } from '../utils/haptics';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type GameplayRouteProp = RouteProp<RootStackParamList, 'Gameplay'>;
-
-const DEFAULT_TIME = 300; // 5 minutes in seconds
 
 export const GameplayScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -18,39 +16,7 @@ export const GameplayScreen: React.FC = () => {
   const route = useRoute<GameplayRouteProp>();
   const { players, spies, secretWord, categoryName, categoryId } = route.params;
 
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_TIME);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          hapticWarning();
-          return 0;
-        }
-        if (prev <= 60) {
-          hapticWarning();
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isUrgent = timeLeft <= 60;
-
   const handleEndQuestions = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
     hapticLight();
     navigation.navigate('Vote', { players, spies, secretWord, categoryName, categoryId });
   };
@@ -62,14 +28,6 @@ export const GameplayScreen: React.FC = () => {
         <Text style={[styles.headerTitle, { color: colors.text }]}>مرحلة الأسئلة</Text>
         <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
           اسألوا بعضكم البعض لكشف الجاسوس
-        </Text>
-      </View>
-
-      {/* Timer */}
-      <View style={[styles.timerCard, { backgroundColor: isUrgent ? colors.danger : colors.card, borderColor: isUrgent ? colors.danger : colors.border }]}>
-        <Clock size={20} color={isUrgent ? '#FFF' : colors.accent} />
-        <Text style={[styles.timerText, { color: isUrgent ? '#FFF' : colors.text }]}>
-          {formatTime(timeLeft)}
         </Text>
       </View>
 
@@ -134,22 +92,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     marginTop: 4,
-  },
-  timerCard: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    gap: 10,
-  },
-  timerText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontVariant: ['tabular-nums'],
   },
   scrollView: {
     flex: 1,

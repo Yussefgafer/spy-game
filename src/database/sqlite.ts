@@ -1,7 +1,19 @@
 import * as SQLite from 'expo-sqlite';
 
-// فتح قاعدة البيانات محلياً باسم spy.db
-const db = SQLite.openDatabaseSync('spy.db');
+// Database reference - lazy initialization
+let db: SQLite.SQLiteDatabase | null = null;
+
+const getDatabase = (): SQLite.SQLiteDatabase => {
+  if (!db) {
+    try {
+      db = SQLite.openDatabaseSync('spy.db');
+    } catch (error) {
+      console.error('Failed to open database:', error);
+      throw error;
+    }
+  }
+  return db;
+};
 
 export interface Player {
   id: number;
@@ -34,9 +46,10 @@ export interface MatchDetail {
 /**
  * تهيئة الجداول في قاعدة البيانات عند إقلاع التطبيق
  */
-export const initDB = () => {
+export const initDB = (): boolean => {
   try {
-    db.execSync(`
+    const database = getDatabase();
+    database.execSync(`
       PRAGMA foreign_keys = ON;
       
       CREATE TABLE IF NOT EXISTS players (
@@ -67,9 +80,10 @@ export const initDB = () => {
         FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE
       );
     `);
-    // Database initialized successfully
+    return true;
   } catch (error) {
     console.error('خطأ أثناء تهيئة قاعدة البيانات:', error);
+    return false;
   }
 };
 
@@ -78,15 +92,16 @@ export const initDB = () => {
  */
 export const addPlayer = (name: string): Player | null => {
   try {
+    const database = getDatabase();
     const trimmedName = name.trim();
     if (!trimmedName) return null;
 
-    db.runSync(
+    database.runSync(
       'INSERT OR IGNORE INTO players (name) VALUES (?);',
       [trimmedName]
     );
 
-    const result = db.getFirstSync<Player>(
+    const result = database.getFirstSync<Player>(
       'SELECT * FROM players WHERE name = ?;',
       [trimmedName]
     );
@@ -102,10 +117,11 @@ export const addPlayer = (name: string): Player | null => {
  */
 export const searchPlayers = (query: string): Player[] => {
   try {
+    const database = getDatabase();
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return [];
 
-    const results = db.getAllSync<Player>(
+    const results = database.getAllSync<Player>(
       'SELECT * FROM players WHERE name LIKE ? LIMIT 5;',
       [`%${trimmedQuery}%`]
     );
@@ -121,7 +137,8 @@ export const searchPlayers = (query: string): Player[] => {
  */
 export const getLeaderboard = (): Player[] => {
   try {
-    const results = db.getAllSync<Player>(
+    const database = getDatabase();
+    const results = database.getAllSync<Player>(
       'SELECT * FROM players ORDER BY total_points DESC;'
     );
     return results;
@@ -136,12 +153,13 @@ export const getLeaderboard = (): Player[] => {
  */
 export const getHistory = (): Match[] => {
   try {
-    const matches = db.getAllSync<Match>(
+    const database = getDatabase();
+    const matches = database.getAllSync<Match>(
       'SELECT * FROM matches ORDER BY date DESC;'
     );
 
     const historyWithDetails = matches.map((match) => {
-      const details = db.getAllSync<MatchDetail>(
+      const details = database.getAllSync<MatchDetail>(
         'SELECT * FROM match_details WHERE match_id = ?;',
         [match.id]
       );
@@ -172,14 +190,16 @@ export const saveMatchResult = (
   }[]
 ): boolean => {
   try {
+    const database = getDatabase();
+    
     // بدء الـ Transaction يدوياً لضمان سلامة البيانات
-    db.execSync('BEGIN TRANSACTION;');
+    database.execSync('BEGIN TRANSACTION;');
 
     const dateStr = new Date().toISOString();
     const spyNamesStr = spyNames.join('، ');
 
     // 1. حفظ المباراة في جدول matches
-    const matchInsertResult = db.runSync(
+    const matchInsertResult = database.runSync(
       `INSERT INTO matches (date, category, secret_word, spy_names, winner, points_pool) 
        VALUES (?, ?, ?, ?, ?, ?);`,
       [dateStr, category, secretWord, spyNamesStr, winner, pointsPool]
@@ -190,7 +210,7 @@ export const saveMatchResult = (
     // 2. حفظ تفاصيل اللاعبين وتحديث إحصائياتهم التراكمية
     for (const player of playersDetails) {
       // أ. حفظ التفاصيل في جدول match_details
-      db.runSync(
+      database.runSync(
         `INSERT INTO match_details (match_id, player_name, role, voted_correctly, points_gained) 
          VALUES (?, ?, ?, ?, ?);`,
         [
@@ -206,7 +226,7 @@ export const saveMatchResult = (
       const isSpy = player.role === 'SPY';
       const isWinner = (isSpy && winner === 'SPY') || (!isSpy && winner === 'PLAYERS');
 
-      db.runSync(
+      database.runSync(
         `UPDATE players 
          SET total_points = total_points + ?,
              matches_played = matches_played + 1,
@@ -222,12 +242,16 @@ export const saveMatchResult = (
       );
     }
 
-    db.execSync('COMMIT;');
-    // Match result saved and player stats updated successfully
+    database.execSync('COMMIT;');
     return true;
   } catch (error) {
-    db.execSync('ROLLBACK;');
-    console.error('خطأ أثناء حفظ نتيجة المباراة (تم عمل Rollback):', error);
+    try {
+      const database = getDatabase();
+      database.execSync('ROLLBACK;');
+    } catch (rollbackError) {
+      console.error('Rollback failed:', rollbackError);
+    }
+    console.error('خطأ أثناء حفظ نتيجة المباراة:', error);
     return false;
   }
 };
@@ -237,13 +261,13 @@ export const saveMatchResult = (
  */
 export const clearDatabase = (): boolean => {
   try {
-    db.execSync(`
+    const database = getDatabase();
+    database.execSync(`
       DROP TABLE IF EXISTS match_details;
       DROP TABLE IF EXISTS matches;
       DROP TABLE IF EXISTS players;
     `);
     initDB();
-    // Database cleared and reinitialized successfully
     return true;
   } catch (error) {
     console.error('خطأ أثناء مسح قاعدة البيانات:', error);

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Animated, Vibration } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,8 @@ import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RevealRouteProp = RouteProp<RootStackParamList, 'Reveal'>;
 
+const REVEAL_DURATION = 1500; // 1.5 seconds to reveal
+
 export const RevealScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -18,22 +20,46 @@ export const RevealScreen: React.FC = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isPressing, setIsPressing] = useState(false);
   
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentPlayer = players[currentIndex];
   const isSpy = spies.includes(currentPlayer);
   const isLastPlayer = currentIndex === players.length - 1;
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+      }
+      Vibration.cancel();
+    };
+  }, []);
+
+  // Cleanup when index changes
+  useEffect(() => {
+    return () => {
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+      Vibration.cancel();
+    };
+  }, [currentIndex]);
+
   const handlePressIn = () => {
-    if (isRevealed) return;
+    if (isRevealed || isPressing) return;
+
+    setIsPressing(true);
 
     // Start progress animation
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 1500,
+      duration: REVEAL_DURATION,
       useNativeDriver: false,
     }).start();
 
@@ -42,26 +68,30 @@ export const RevealScreen: React.FC = () => {
       useNativeDriver: true,
     }).start();
 
-    // Start progress tracking
-    let progress = 0;
-    pressTimerRef.current = setInterval(() => {
-      progress += 0.05;
-      Vibration.vibrate(20);
-      
-      if (progress >= 1) {
-        handleRevealComplete();
-      }
-    }, 75);
+    // Single vibration at start
+    Vibration.vibrate(50);
+
+    // Set timer for reveal
+    revealTimerRef.current = setTimeout(() => {
+      handleRevealComplete();
+    }, REVEAL_DURATION);
   };
 
   const handlePressOut = () => {
-    if (isRevealed) return;
+    if (isRevealed || !isPressing) return;
 
-    // Reset progress
-    if (pressTimerRef.current) {
-      clearInterval(pressTimerRef.current);
+    setIsPressing(false);
+
+    // Cancel any pending timer
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
     }
 
+    // Stop any vibration
+    Vibration.cancel();
+
+    // Reset progress animation
     Animated.timing(progressAnim, {
       toValue: 0,
       duration: 200,
@@ -75,12 +105,14 @@ export const RevealScreen: React.FC = () => {
   };
 
   const handleRevealComplete = () => {
-    if (pressTimerRef.current) {
-      clearInterval(pressTimerRef.current);
-    }
+    // Clear timer reference
+    revealTimerRef.current = null;
+    setIsPressing(false);
     
+    // Stop vibration and do success haptic
+    Vibration.cancel();
     hapticSuccess();
-    Vibration.vibrate(100);
+    
     setIsRevealed(true);
   };
 
@@ -95,8 +127,16 @@ export const RevealScreen: React.FC = () => {
     if (isLastPlayer) {
       navigation.navigate('Gameplay', { players, spies, secretWord, categoryName, categoryId });
     } else {
+      // Cleanup before changing player
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+      Vibration.cancel();
+      
       setCurrentIndex(currentIndex + 1);
       setIsRevealed(false);
+      setIsPressing(false);
       progressAnim.setValue(0);
       scaleAnim.setValue(1);
     }
@@ -151,7 +191,7 @@ export const RevealScreen: React.FC = () => {
           ]}
         >
           {/* Progress Overlay */}
-          {!isRevealed && (
+          {!isRevealed && isPressing && (
             <Animated.View
               style={[
                 styles.progressOverlay,

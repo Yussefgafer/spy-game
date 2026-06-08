@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { initDB } from './src/database/sqlite';
 import { CATEGORIES } from './src/constants/words';
+import ErrorBoundary from './src/components/ErrorBoundary';
 
 import { HomeScreen } from './src/screens/HomeScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
@@ -125,9 +126,11 @@ function MainApp() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <MainApp />
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <MainApp />
+        </ThemeProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
