@@ -30,12 +30,22 @@ export const ResultsScreen: React.FC = () => {
       spies,
       spyGuessedCorrectly ? 'SPY' : 'PLAYERS',
       players.length * 10,
-      players.map((name) => ({
-        name,
-        role: spies.includes(name) ? 'SPY' : 'PLAYER',
-        votedCorrectly: correctVoters.includes(name),
-        pointsGained: correctVoters.includes(name) ? 10 : 0,
-      }))
+      players.map((name) => {
+        const isSpy = spies.includes(name);
+        // الجاسوس الفائز يحصل على 20 نقطة، اللاعب الذي صوّت صحيح يحصل على 10 نقاط
+        let pointsGained = 0;
+        if (isSpy && spyGuessedCorrectly) {
+          pointsGained = 20;
+        } else if (!isSpy && correctVoters.includes(name)) {
+          pointsGained = 10;
+        }
+        return {
+          name,
+          role: isSpy ? 'SPY' : 'PLAYER',
+          votedCorrectly: correctVoters.includes(name),
+          pointsGained,
+        };
+      })
     );
     if (success) setSaved(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
