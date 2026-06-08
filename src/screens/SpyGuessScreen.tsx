@@ -4,7 +4,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Timer, AlertTriangle, ArrowLeft, Zap, Eye, Sparkles } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
-import { RootStackParamList, CATEGORIES, shuffleArray } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
+import { CATEGORIES } from '../constants/words';
+import { shuffleArray } from '../utils/shuffle';
 import { hapticLight, hapticSuccess, hapticError, hapticWarning } from '../utils/haptics';
 import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 

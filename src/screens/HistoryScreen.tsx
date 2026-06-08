@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { History, ChevronDown, Trophy, Clock, Users } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { getHistory, Match } from '../database/sqlite';
 import { hapticLight } from '../utils/haptics';
 import { PopInView, FloatingView } from '../components/BouncyAnimations';

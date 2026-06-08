@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { initDB } from './src/database/sqlite';
-import { CATEGORIES } from './src/constants/words';
 import ErrorBoundary from './src/components/ErrorBoundary';
 
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -19,62 +18,9 @@ import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 
-export type RootStackParamList = {
-  Home: undefined;
-  Setup: undefined;
-  Reveal: {
-    players: string[];
-    spies: string[];
-    secretWord: string;
-    categoryName: string;
-    categoryId: string;
-  };
-  Gameplay: {
-    players: string[];
-    spies: string[];
-    secretWord: string;
-    categoryName: string;
-    categoryId: string;
-  };
-  Vote: {
-    players: string[];
-    spies: string[];
-    secretWord: string;
-    categoryName: string;
-    categoryId: string;
-  };
-  SpyGuess: {
-    categoryId: string;
-    correctWord: string;
-    players: string[];
-    spies: string[];
-    correctVoters: string[];
-  };
-  Results: {
-    players: string[];
-    spies: string[];
-    secretWord: string;
-    categoryName: string;
-    categoryId: string;
-    correctVoters: string[];
-    spyGuessedCorrectly: boolean;
-  };
-  Leaderboard: undefined;
-  History: undefined;
-  Settings: undefined;
-};
+import type { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-// Fisher-Yates shuffle
-const shuffleArray = <T,>(array: T[]): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
 
 function AppNavigator() {
   const { colors } = useTheme();
@@ -138,6 +84,3 @@ export default function App() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 });
-
-// Export utility for use in screens
-export { shuffleArray, CATEGORIES };

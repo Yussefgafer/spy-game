@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
 import { useTheme, ThemeType, ThemeColors } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { clearDatabase } from '../database/sqlite';
 import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
 import { PopInView, FloatingView } from '../components/BouncyAnimations';

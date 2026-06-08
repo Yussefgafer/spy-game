@@ -4,7 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RefreshCw, Home, Target, Users, Eye, CheckCircle, Sparkles } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { saveMatchResult } from '../database/sqlite';
 import { hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';

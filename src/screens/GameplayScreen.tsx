@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Users, ArrowLeft, HelpCircle, Zap, Timer, AlertTriangle, Clock, Play, Pause } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
-import { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess, hapticWarning } from '../utils/haptics';
 import { PopInView, SlideInBounceView, FloatingView, PulseView } from '../components/BouncyAnimations';
 
