@@ -220,7 +220,7 @@ export const SetupScreen: React.FC = () => {
                   <Pressable
                     key={player.id}
                     onPress={() => handleAddPlayer(player.name)}
-                    style={styles.suggestionItem}
+                    style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
                   >
                     <Text style={[styles.suggestionText, { color: colors.text }]}>{player.name}</Text>
                   </Pressable>
@@ -611,7 +611,6 @@ const styles = StyleSheet.create({
   suggestionItem: {
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   suggestionText: {
     fontSize: 15,

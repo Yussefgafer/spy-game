@@ -173,6 +173,8 @@ const BouncyMenuCard: React.FC<BouncyMenuCardProps> = ({ item, colors, onPress }
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel={item.label}
+        accessibilityRole="button"
         style={[
           styles.menuCard,
           { backgroundColor: colors.card, borderColor: colors.border },
@@ -258,6 +260,8 @@ const BouncySettingsButton: React.FC<BouncySettingsButtonProps> = ({ colors, onP
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel="الإعدادات"
+        accessibilityRole="button"
         style={[
           styles.settingsButton,
           { backgroundColor: colors.card, borderColor: colors.border },
@@ -320,7 +324,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: colors.border,
   },
   settingsButton: {
     flexDirection: 'row-reverse',

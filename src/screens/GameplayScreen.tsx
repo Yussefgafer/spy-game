@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Users, ArrowLeft, HelpCircle, Zap, Timer, AlertTriangle, Clock, Play, Pause } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,6 +28,29 @@ export const GameplayScreen: React.FC = () => {
   const [timerExpired, setTimerExpired] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningTriggeredRef = useRef(false);
+
+  // اعتراض زر الرجوع — تأكيد المغادرة أثناء اللعب
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          'مغادرة اللعبة',
+          'هل تريد إنهاء المباراة والعودة للقائمة الرئيسية؟',
+          [
+            { text: 'تراجع', style: 'cancel' },
+            {
+              text: 'خروج',
+              style: 'destructive',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+        return true; // منع السلوك الافتراضي
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [navigation])
+  );
 
   // Load timer setting from AsyncStorage
   useEffect(() => {
@@ -323,7 +346,7 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, index, total,
           index < total - 1 && { borderBottomColor: colors.border },
         ]}
       >
-        <View style={styles.playerNumber}>
+        <View style={[styles.playerNumber, { backgroundColor: colors.border }]}>
           <Text style={[styles.playerNumberText, { color: colors.accent }]}>{index + 1}</Text>
         </View>
         <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
@@ -482,7 +505,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },

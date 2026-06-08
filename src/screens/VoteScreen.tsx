@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Check, ArrowLeft, MinusCircle, Vote } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
@@ -16,6 +16,29 @@ export const VoteScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId } = route.params;
+
+  // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          'مغادرة التصويت',
+          'هل تريد إلغاء جولة التصويت والعودة للقائمة الرئيسية؟',
+          [
+            { text: 'تراجع', style: 'cancel' },
+            {
+              text: 'خروج',
+              style: 'destructive',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+        return true;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [navigation])
+  );
 
   // All players vote (including spies can vote to confuse)
   const [currentVoterIndex, setCurrentVoterIndex] = useState(0);
