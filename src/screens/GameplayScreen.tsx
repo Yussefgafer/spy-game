@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Users, ArrowLeft, HelpCircle, Zap, Timer, AlertTriangle, Clock, Play, Pause } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,6 +29,29 @@ export const GameplayScreen: React.FC = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningTriggeredRef = useRef(false);
 
+  // اعتراض زر الرجوع — تأكيد المغادرة أثناء اللعب
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          'مغادرة اللعبة',
+          'هل تريد إنهاء المباراة والعودة للقائمة الرئيسية؟',
+          [
+            { text: 'تراجع', style: 'cancel' },
+            {
+              text: 'خروج',
+              style: 'destructive',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+        return true; // منع السلوك الافتراضي
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [navigation])
+  );
+
   // Load timer setting from AsyncStorage
   useEffect(() => {
     const loadTimerSetting = async () => {
@@ -38,7 +61,7 @@ export const GameplayScreen: React.FC = () => {
           setTimerEnabled(saved === 'true');
         }
       } catch (e) {
-        console.log('Error loading timer setting:', e);
+        // silently fail
       }
     };
     loadTimerSetting();
@@ -87,7 +110,7 @@ export const GameplayScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem(TIMER_SETTINGS_KEY, String(newValue));
     } catch (e) {
-      console.log('Error saving timer setting:', e);
+      // silently fail
     }
   };
 
@@ -122,6 +145,9 @@ export const GameplayScreen: React.FC = () => {
             <PopInView delay={100}>
               <Pressable
                 onPress={toggleTimerEnabled}
+                accessibilityLabel={timerEnabled ? 'إيقاف المؤقت' : 'تشغيل المؤقت'}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: timerEnabled }}
                 style={[styles.timerToggleBtn, { backgroundColor: timerEnabled ? `${colors.accent}20` : colors.card, borderColor: timerEnabled ? colors.accent : colors.border }]}
               >
                 <Clock size={20} color={timerEnabled ? colors.accent : colors.textMuted} />
@@ -293,7 +319,14 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, i
       )}
       
       {/* Pause/Play button */}
-      <Pressable onPressIn={handlePressIn} onPress={onTogglePause} style={styles.pauseBtn}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPress={onTogglePause}
+        accessibilityLabel={isPaused ? 'استئناف اللعبة' : 'إيقاف اللعبة مؤقتاً'}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: isPaused }}
+        style={styles.pauseBtn}
+      >
         {isPaused ? (
           <Play size={22} color={isUrgent ? '#FFF' : colors.accent} fill={isUrgent ? '#FFF' : colors.accent} />
         ) : (
@@ -323,7 +356,7 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, index, total,
           index < total - 1 && { borderBottomColor: colors.border },
         ]}
       >
-        <View style={styles.playerNumber}>
+        <View style={[styles.playerNumber, { backgroundColor: colors.border }]}>
           <Text style={[styles.playerNumberText, { color: colors.accent }]}>{index + 1}</Text>
         </View>
         <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
@@ -372,6 +405,8 @@ const BouncyEndButton: React.FC<BouncyEndButtonProps> = ({ onPress, colors }) =>
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel="انتهت الأسئلة — الانتقال للتصويت"
+        accessibilityRole="button"
         style={[styles.endButton, { backgroundColor: colors.accent }]}
       >
         <Zap size={22} color="#000" />
@@ -387,7 +422,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 16,
+    paddingTop: 20,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
@@ -397,16 +432,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
   },
   headerSubtitle: {
-    fontSize: 14,
-    marginTop: 6,
+    fontSize: 13,
+    marginTop: 8,
+    lineHeight: 18,
   },
   timerToggleBtn: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 14,
     borderWidth: 1.5,
     justifyContent: 'center',
@@ -417,11 +453,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 16,
-    marginTop: 12,
-    padding: 18,
-    borderRadius: 20,
+    marginTop: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    borderRadius: 18,
     borderWidth: 2,
-    gap: 12,
+    gap: 14,
     overflow: 'hidden',
   },
   timerProgress: {
@@ -432,100 +469,103 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   timerText: {
-    fontSize: 36,
-    fontWeight: 'bold',
+    fontSize: 40,
+    fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
   urgentContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   urgentText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '700',
   },
   pauseBtn: {
-    padding: 8,
+    padding: 10,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   playersCard: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1.5,
-    padding: 18,
-    marginBottom: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   playersHeader: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   playersTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   playerItem: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     gap: 12,
   },
   playerNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   playerNumberText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '700',
   },
   playerName: {
-    fontSize: 16,
-    textAlign: 'right',
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
   instructionCard: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1.5,
-    padding: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
   instructionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 16,
   },
   instructionText: {
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 24,
-    marginTop: 10,
+    lineHeight: 22,
+    marginTop: 12,
   },
   footer: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   endButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 58,
+    height: 60,
     borderRadius: 16,
-    gap: 10,
+    gap: 12,
   },
   endButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#000',
   },
 });

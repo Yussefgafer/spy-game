@@ -265,6 +265,9 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel={`اختر الكلمة: ${word}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.wordOption,
           {
@@ -311,6 +314,9 @@ const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord,
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={!selectedWord}
+        accessibilityLabel="تأكيد الكلمة المختارة"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !selectedWord }}
         style={[
           styles.confirmButton,
           {
@@ -335,17 +341,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 16,
+    paddingTop: 20,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
   },
   headerSubtitle: {
-    fontSize: 14,
-    marginTop: 6,
+    fontSize: 13,
+    marginTop: 8,
+    lineHeight: 18,
   },
   timerCard: {
     flexDirection: 'row-reverse',
@@ -353,49 +360,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 16,
     marginTop: 16,
-    padding: 18,
-    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    borderRadius: 18,
     borderWidth: 2,
     gap: 14,
   },
   timerText: {
     fontSize: 40,
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
   urgentContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   urgentText: {
     color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '700',
   },
   spyCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 16,
-    padding: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1.5,
     gap: 12,
   },
   spyIconContainer: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   spyLabel: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '600',
   },
   spyName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
@@ -403,43 +413,45 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   sectionTitle: {
-    fontSize: 15,
-    marginBottom: 12,
+    fontSize: 14,
+    marginBottom: 14,
     textAlign: 'right',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   wordOption: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
-    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 14,
     borderWidth: 1.5,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   wordText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
     flex: 1,
   },
   checkIcon: {
-    marginLeft: 10,
+    marginLeft: 12,
   },
   footer: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   confirmButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 58,
-    borderRadius: 18,
+    height: 60,
+    borderRadius: 16,
     borderWidth: 1.5,
-    gap: 10,
+    gap: 12,
   },
   confirmButtonText: {
     fontSize: 18,

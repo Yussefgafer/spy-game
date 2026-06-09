@@ -220,7 +220,9 @@ export const SetupScreen: React.FC = () => {
                   <Pressable
                     key={player.id}
                     onPress={() => handleAddPlayer(player.name)}
-                    style={styles.suggestionItem}
+                    accessibilityLabel={`أضف ${player.name} للاعبين`}
+                    accessibilityRole="button"
+                    style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
                   >
                     <Text style={[styles.suggestionText, { color: colors.text }]}>{player.name}</Text>
                   </Pressable>
@@ -304,6 +306,9 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({ label, selected
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        accessibilityLabel={`اختر فئة: ${label}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.categoryChip,
           {
@@ -345,6 +350,8 @@ const BouncyCounterButton: React.FC<BouncyCounterButtonProps> = ({ icon, onPress
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel="زر المحرر"
+        accessibilityRole="button"
         style={[styles.counterButton, { backgroundColor: `${color}20` }]}
       >
         {icon}
@@ -415,7 +422,12 @@ const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) =>
         { rotate: rotateAnim.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }) },
       ],
     }}>
-      <Pressable style={[styles.addButton, { backgroundColor: colors.accent }]}>
+      <Pressable
+        onPress={onPress}
+        accessibilityLabel="أضف لاعب جديد"
+        accessibilityRole="button"
+        style={[styles.addButton, { backgroundColor: colors.accent }]}
+      >
         <Plus size={24} color="#000" />
       </Pressable>
     </Animated.View>
@@ -447,7 +459,12 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
     <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
       <View style={[styles.playerItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.playerName, { color: colors.text }]}>{name}</Text>
-        <Pressable onPress={handleRemove} style={styles.removeButton}>
+        <Pressable
+          onPress={handleRemove}
+          accessibilityLabel={`حذف ${name} من اللاعبين`}
+          accessibilityRole="button"
+          style={styles.removeButton}
+        >
           <X size={20} color={colors.danger} />
         </Pressable>
       </View>
@@ -483,6 +500,9 @@ const BouncyStartButton: React.FC<BouncyStartButtonProps> = ({ onPress, disabled
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={disabled}
+        accessibilityLabel="ابدأ اللعبة"
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={[
           styles.startButton,
           {
@@ -510,49 +530,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingBottom: 12,
     paddingHorizontal: 16,
   },
   backButton: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 14,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 16,
     textAlign: 'right',
+    lineHeight: 20,
   },
   categoriesRow: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   categoryChip: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
   },
   categoryText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
   counterRow: {
     flexDirection: 'row-reverse',
@@ -560,66 +582,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
     borderWidth: 1.5,
-    padding: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   counterButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
   counterValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    marginHorizontal: 32,
+    fontWeight: '800',
+    marginHorizontal: 36,
   },
   counterHint: {
-    fontSize: 13,
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    lineHeight: 16,
   },
   inputContainer: {
     flexDirection: 'row-reverse',
-    gap: 10,
+    gap: 12,
   },
   input: {
     flex: 1,
-    height: 54,
-    borderRadius: 14,
+    height: 56,
+    borderRadius: 16,
     borderWidth: 1.5,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    paddingHorizontal: 18,
+    fontSize: 15,
   },
   addButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   suggestionsContainer: {
     position: 'absolute',
-    top: 100,
+    top: '100%',
     left: 16,
     right: 16,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     zIndex: 100,
     elevation: 5,
+    maxHeight: 220,
   },
   suggestionItem: {
-    padding: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   suggestionText: {
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'right',
+    lineHeight: 18,
   },
   playersList: {
-    marginTop: 14,
-    gap: 10,
+    marginTop: 16,
+    gap: 12,
   },
   playerItem: {
     flexDirection: 'row-reverse',
