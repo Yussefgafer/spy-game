@@ -61,7 +61,7 @@ export const GameplayScreen: React.FC = () => {
           setTimerEnabled(saved === 'true');
         }
       } catch (e) {
-        console.log('Error loading timer setting:', e);
+        // silently fail
       }
     };
     loadTimerSetting();
@@ -110,7 +110,7 @@ export const GameplayScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem(TIMER_SETTINGS_KEY, String(newValue));
     } catch (e) {
-      console.log('Error saving timer setting:', e);
+      // silently fail
     }
   };
 
