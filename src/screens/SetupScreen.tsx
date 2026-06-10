@@ -195,7 +195,7 @@ export const SetupScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               👥 اللاعبون ({players.length}/10)
             </Text>
-            
+
             {/* Input Field */}
             <View style={styles.inputContainer}>
               <TextInput
@@ -218,7 +218,10 @@ export const SetupScreen: React.FC = () => {
               />
             </View>
 
-            {/* Suggestions */}
+            {/* Suggestions — now relative, sits inside section flow
+                (below input, above playersList). Replaces the
+                position: absolute + top: 100 hack that broke when
+                input height changed. */}
             {showSuggestions && suggestions.length > 0 && (
               <View style={[styles.suggestionsContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {suggestions.map((player, index) => (
@@ -608,10 +611,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   suggestionsContainer: {
-    position: 'absolute',
-    top: 100,
-    left: 16,
-    right: 16,
+    // Was: position: 'absolute', top: 100 (magic number depending on
+    // inputContainer height). When input height changed (placeholder,
+    // font scale, etc), suggestions floated over playersList.
+    // Fix: relative position. Container sits in normal flow below
+    // inputContainer and above playersList, scrolls naturally.
+    marginTop: 10,
     borderRadius: 14,
     borderWidth: 1,
     zIndex: 100,
