@@ -86,8 +86,14 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // تمرير spyGuessedCorrectly الذي استلمناه من SpyGuessScreen
-      // (أو false كقيمة افتراضية إن لم يدخل الجاسوس مرحلة التخمين)
+      // 🚨 إصلاح [12]: لو لا أحد صوّت على جاسوس (correctVoters فارغ)،
+      // الجواسيس ينجون من التصويت. النتائج يجب أن تعرض فوزهم.
+      // ندمج هذا مع قيمة spyGuessedCorrectly الأصلية (تخمين الجاسوس)
+      // لأن المنطق في ResultsScreen يعتمد على هذه القيمة لتحديد الفائز.
+      // الآن spyGuessedCorrectly يعني "الجواسيس فاز" (إما بالتخمين أو بالهروب).
+      const spyWon =
+        spyGuessedCorrectly || correctVoters.length === 0;
+
       navigation.navigate('Results', {
         players,
         spies,
@@ -95,7 +101,7 @@ export const VoteScreen: React.FC = () => {
         categoryName: categoryName || '',
         categoryId,
         correctVoters,
-        spyGuessedCorrectly,
+        spyGuessedCorrectly: spyWon,
       });
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);
