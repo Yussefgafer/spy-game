@@ -9,6 +9,7 @@ import { clearDatabase } from '../database/sqlite';
 import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
 import { PopInView, FloatingView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
+import { SafePressable } from '../components/SafePressable';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -172,14 +173,15 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[
           styles.themeCard,
           {
@@ -211,7 +213,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
             </View>
           </Animated.View>
         )}
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
@@ -232,14 +234,15 @@ const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) 
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[styles.dangerCard, { backgroundColor: colors.card, borderColor: colors.danger }]}
       >
         <View style={styles.dangerContent}>
@@ -249,7 +252,7 @@ const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) 
           <Text style={[styles.dangerLabel, { color: colors.danger }]}>🗑️ مسح جميع البيانات</Text>
         </View>
         <ChevronLeft size={22} color={colors.danger} />
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
@@ -271,14 +274,15 @@ const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, 
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[
           styles.modalButton,
           variant === 'cancel'
@@ -292,7 +296,7 @@ const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, 
         ]}>
           {label}
         </Text>
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
