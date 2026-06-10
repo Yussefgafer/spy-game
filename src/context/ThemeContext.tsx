@@ -15,13 +15,6 @@ export interface ThemeColors {
   danger: string;
 }
 
-export interface ThemeContextProps {
-  theme: ThemeType;
-  setTheme: (theme: ThemeType) => void;
-  colors: ThemeColors;
-  glassScheme: 'dark' | 'light';
-}
-
 const THEMES: Record<ThemeType, ThemeColors> = {
   DARK: {
     background: '#121212',
@@ -55,7 +48,14 @@ const THEMES: Record<ThemeType, ThemeColors> = {
   },
 };
 
-const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
+interface ThemeContextValue {
+  theme: ThemeType;
+  setTheme: (theme: ThemeType) => void;
+  colors: ThemeColors;
+  glassScheme: 'dark' | 'light';
+}
+
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme();
