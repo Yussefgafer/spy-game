@@ -134,11 +134,16 @@ export const SetupScreen: React.FC = () => {
         <PopInView delay={100}>
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>🎯 اختر التصنيف</Text>
-            <View style={styles.categoriesRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesScroll}
+              contentContainerStyle={styles.categoriesRow}
+            >
               {CATEGORIES.map((cat, index) => {
                 const isSelected = selectedCategory === cat.id;
                 return (
-                  <PopInView key={cat.id} delay={150 + index * 50} scale={1}>
+                  <PopInView key={cat.id} delay={150 + index * 30} scale={1}>
                     <BouncyCategoryChip
                       label={cat.name}
                       selected={isSelected}
@@ -151,7 +156,7 @@ export const SetupScreen: React.FC = () => {
                   </PopInView>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         </PopInView>
 
@@ -539,10 +544,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     textAlign: 'right',
   },
+  categoriesScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
   categoriesRow: {
     flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
     gap: 10,
+    paddingRight: 16,
   },
   categoryChip: {
     paddingHorizontal: 18,
