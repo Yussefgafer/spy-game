@@ -111,27 +111,26 @@ export const SettingsScreen: React.FC = () => {
       <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-              <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
-                <AlertTriangle size={32} color={colors.danger} />
-              </View>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>⚠️ تنبيه هام</Text>
-              <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
-                سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً!
-              </Text>
-              <View style={styles.modalButtons}>
-                <BouncyModalButton
-                  onPress={() => setShowClearModal(false)}
-                  colors={colors}
-                  label="إلغاء"
-                  variant="cancel"
-                />
-                <BouncyModalButton
-                  onPress={handleClearData}
-                  colors={colors}
-                  label="مسح"
-                  variant="danger"
-                />
-              </View>
+            <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
+              <AlertTriangle size={32} color={colors.danger} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>⚠️ تنبيه هام</Text>
+            <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
+              سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً!
+            </Text>
+            <View style={styles.modalButtons}>
+              <BouncyModalButton
+                onPress={() => setShowClearModal(false)}
+                colors={colors}
+                label="إلغاء"
+                variant="cancel"
+              />
+              <BouncyModalButton
+                onPress={handleClearData}
+                colors={colors}
+                label="مسح"
+                variant="danger"
+              />
             </View>
           </View>
         </View>
