@@ -65,6 +65,15 @@ export const saveLastPlayers = async (players: string[]): Promise<void> => {
 /**
  * تحميل آخر قائمة لاعبين
  */
-export const loadLastPlayers = async (players: string[]): Promise<string[]> => {
-  return players;
+export const loadLastPlayers = async (): Promise<string[]> => {
+  try {
+    const playersStr = await AsyncStorage.getItem(KEYS.LAST_PLAYERS);
+    if (playersStr) {
+      return JSON.parse(playersStr);
+    }
+    return [];
+  } catch (error) {
+    console.error('خطأ أثناء تحميل قائمة اللاعبين:', error);
+    return [];
+  }
 };
