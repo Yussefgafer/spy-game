@@ -89,30 +89,67 @@ jobs:
       - name: 🏗️ Build Release APK
         run: |
           cd android
+          echo "Starting Gradle build..."
           if [ -f app/release.keystore ]; then
+            echo "✅ Keystore found, building signed APK"
             ./gradlew assembleRelease \
               -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
               -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
               -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
-              -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
+              -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }} \
+              -Dorg.gradle.jvmargs="-Xmx4096m"
           else
-            ./gradlew assembleRelease
+            echo "⚠️ No keystore, building unsigned APK"
+            ./gradlew assembleRelease -Dorg.gradle.jvmargs="-Xmx4096m"
           fi
+          echo "✅ Build completed"
+
+      - name: 📂 List APK files
+        run: |
+          echo "=== Looking for APK files ==="
+          find android/app/build/outputs -name "*.apk" -type f || echo "❌ No APK found!"
+          ls -lh android/app/build/outputs/apk/release/ || echo "Directory not found"
 
       - name: 📊 Check APK size
         run: |
-          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" -type f | head -1)
           if [ -f "$APK_FILE" ]; then
             SIZE=$(du -h "$APK_FILE" | cut -f1)
-            echo "📦 APK Size: $SIZE"
+            echo "✅ APK File: $(basename $APK_FILE)"
+            echo "📏 APK Size: $SIZE"
+          else
+            echo "❌ APK file not found!"
+            exit 1
           fi
 
       - name: 📝 Rename APK
         run: |
+          cd android/app/build/outputs/apk/release/
           VERSION=${GITHUB_REF#refs/tags/v}
-          mv android/app/build/outputs/apk/release/app-release.apk spy-game-${VERSION}.apk || \
-          mv android/app/build/outputs/apk/release/app-universal-release.apk spy-game-${VERSION}.apk || \
-          mv android/app/build/outputs/apk/release/*.apk spy-game-${VERSION}.apk
+          echo "Version: $VERSION"
+          
+          if [ -f "app-release.apk" ]; then
+            echo "Found: app-release.apk"
+            mv app-release.apk spy-game-${VERSION}.apk
+          elif [ -f "app-universal-release.apk" ]; then
+            echo "Found: app-universal-release.apk"
+            mv app-universal-release.apk spy-game-${VERSION}.apk
+          else
+            echo "Listing available files:"
+            ls -la
+            echo "❌ No APK file found for renaming!"
+            exit 1
+          fi
+          
+          ls -lh spy-game-*.apk
+
+      - name: 📁 Check workspace before release
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Looking for APK files ==="
+          find . -name "spy-game-*.apk" -type f || echo "No renamed APK found"
+          find . -name "*.apk" -type f 2>/dev/null | head -10
 
       - name: 🚀 Create Release
         uses: softprops/action-gh-release@v2
@@ -141,7 +178,7 @@ jobs:
             - 9 تصنيفات جديدة
             - تحسينات الواجهة (UX/UI)
           files: |
-            spy-game-*.apk
+            android/app/build/outputs/apk/release/spy-game-*.apk
           draft: false
           prerelease: false
         env:
