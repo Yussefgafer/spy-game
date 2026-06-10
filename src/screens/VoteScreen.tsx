@@ -15,7 +15,7 @@ export const VoteScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
-  const { players, spies, secretWord, categoryId } = route.params;
+  const { players, spies, secretWord, categoryId, categoryName } = route.params;
 
   // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
   useFocusEffect(
@@ -84,13 +84,15 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // Navigate to SpyGuess with all data
-      navigation.navigate('SpyGuess', {
-        categoryId,
-        correctWord: secretWord,
+      // Navigate to Results with all data
+      navigation.navigate('Results', {
         players,
         spies,
+        secretWord,
+        categoryName: categoryName || '',
+        categoryId,
         correctVoters,
+        spyGuessedCorrectly: false, // سيتم تحديده في ResultsScreen
       });
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);

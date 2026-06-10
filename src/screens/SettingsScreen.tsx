@@ -9,6 +9,7 @@ import { clearDatabase } from '../database/sqlite';
 import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
 import { PopInView, FloatingView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
+import { SafePressable } from '../components/SafePressable';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,14 +32,12 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <PopInView delay={50}>
-        <View style={styles.header}>
-          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ الإعدادات</Text>
-          <View style={styles.backButton} />
-        </View>
-      </PopInView>
+      {/* Header without animations */}
+      <View style={styles.header}>
+        <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ الإعدادات</Text>
+        <View style={styles.backButton} />
+      </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Theme Section */}
@@ -111,13 +110,10 @@ export const SettingsScreen: React.FC = () => {
       {/* Clear Data Modal */}
       <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
         <View style={styles.modalOverlay}>
-          <PopInView>
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-              <FloatingView distance={4} duration={2000}>
-                <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
-                  <AlertTriangle size={36} color={colors.danger} />
-                </View>
-              </FloatingView>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
+                <AlertTriangle size={32} color={colors.danger} />
+              </View>
               <Text style={[styles.modalTitle, { color: colors.text }]}>⚠️ تنبيه هام</Text>
               <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
                 سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً!
@@ -137,7 +133,7 @@ export const SettingsScreen: React.FC = () => {
                 />
               </View>
             </View>
-          </PopInView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -172,14 +168,15 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[
           styles.themeCard,
           {
@@ -211,7 +208,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
             </View>
           </Animated.View>
         )}
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
@@ -232,14 +229,15 @@ const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) 
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[styles.dangerCard, { backgroundColor: colors.card, borderColor: colors.danger }]}
       >
         <View style={styles.dangerContent}>
@@ -249,7 +247,7 @@ const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) 
           <Text style={[styles.dangerLabel, { color: colors.danger }]}>🗑️ مسح جميع البيانات</Text>
         </View>
         <ChevronLeft size={22} color={colors.danger} />
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
@@ -271,14 +269,15 @@ const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, 
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <SafePressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
+        threshold={40}
         style={[
           styles.modalButton,
           variant === 'cancel'
@@ -292,7 +291,7 @@ const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, 
         ]}>
           {label}
         </Text>
-      </Pressable>
+      </SafePressable>
     </Animated.View>
   );
 };
@@ -305,58 +304,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
   },
   backButton: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   themeOptions: {
-    gap: 12,
-    marginBottom: 28,
+    gap: 10,
   },
   themeCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    padding: 16,
     borderRadius: 16,
     borderWidth: 1.5,
   },
   themeInfo: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   themeIconContainer: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -365,18 +361,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   themeLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
   },
   themeDescription: {
-    fontSize: 12,
-    marginTop: 4,
-    lineHeight: 16,
+    fontSize: 13,
+    marginTop: 2,
   },
   checkContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -384,48 +379,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    padding: 16,
     borderRadius: 16,
     borderWidth: 1.5,
   },
   dangerContent: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   dangerIconContainer: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dangerLabel: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
   aboutCard: {
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    padding: 20,
     borderRadius: 16,
     borderWidth: 1.5,
     alignItems: 'center',
   },
   aboutTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   aboutVersion: {
-    fontSize: 12,
-    marginTop: 8,
-    fontWeight: '600',
+    fontSize: 13,
+    marginTop: 6,
   },
   aboutDesc: {
-    fontSize: 13,
-    marginTop: 14,
+    fontSize: 14,
+    marginTop: 12,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,
@@ -436,46 +428,45 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 320,
     borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
   modalIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 16,
-    lineHeight: 24,
+    marginBottom: 12,
   },
   modalMessage: {
     fontSize: 14,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    lineHeight: 20,
+    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row-reverse',
-    gap: 12,
+    gap: 10,
     width: '100%',
   },
   modalButton: {
     flex: 1,
-    height: 56,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

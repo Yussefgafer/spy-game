@@ -13,6 +13,7 @@ import { RevealScreen } from './src/screens/RevealScreen';
 import { GameplayScreen } from './src/screens/GameplayScreen';
 import { VoteScreen } from './src/screens/VoteScreen';
 import { SpyGuessScreen } from './src/screens/SpyGuessScreen';
+import { SpyIdentifyScreen } from './src/screens/SpyIdentifyScreen';
 import { ResultsScreen } from './src/screens/ResultsScreen';
 import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
@@ -39,6 +40,7 @@ function AppNavigator() {
         <Stack.Screen name="Setup" component={SetupScreen} />
         <Stack.Screen name="Reveal" component={RevealScreen} />
         <Stack.Screen name="Gameplay" component={GameplayScreen} />
+        <Stack.Screen name="SpyIdentify" component={SpyIdentifyScreen} />
         <Stack.Screen name="Vote" component={VoteScreen} />
         <Stack.Screen name="SpyGuess" component={SpyGuessScreen} />
         <Stack.Screen name="Results" component={ResultsScreen} />

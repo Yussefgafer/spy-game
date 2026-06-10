@@ -45,19 +45,17 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header with floating animation */}
-      <FloatingView distance={6} duration={2500}>
-        <View style={styles.header}>
-          <PopInView delay={100}>
-            <Text style={[styles.title, { color: colors.text }]}>🕵️ الجاسوس</Text>
-          </PopInView>
-          <PopInView delay={200}>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              من هو الجاسوس بينكم؟
-            </Text>
-          </PopInView>
-        </View>
-      </FloatingView>
+      {/* Header without animations */}
+      <View style={styles.header}>
+        <PopInView delay={100}>
+          <Text style={[styles.title, { color: colors.text }]}>🕵️ الجاسوس</Text>
+        </PopInView>
+        <PopInView delay={200}>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            من هو الجاسوس بينكم؟
+          </Text>
+        </PopInView>
+      </View>
 
       {/* Menu Grid with staggered pop-in */}
       <View style={styles.menuGrid}>

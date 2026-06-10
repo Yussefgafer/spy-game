@@ -134,11 +134,16 @@ export const SetupScreen: React.FC = () => {
         <PopInView delay={100}>
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>🎯 اختر التصنيف</Text>
-            <View style={styles.categoriesRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesScroll}
+              contentContainerStyle={styles.categoriesRow}
+            >
               {CATEGORIES.map((cat, index) => {
                 const isSelected = selectedCategory === cat.id;
                 return (
-                  <PopInView key={cat.id} delay={150 + index * 50} scale={1}>
+                  <PopInView key={cat.id} delay={150 + index * 30} scale={1}>
                     <BouncyCategoryChip
                       label={cat.name}
                       selected={isSelected}
@@ -151,7 +156,7 @@ export const SetupScreen: React.FC = () => {
                   </PopInView>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         </PopInView>
 
@@ -220,9 +225,7 @@ export const SetupScreen: React.FC = () => {
                   <Pressable
                     key={player.id}
                     onPress={() => handleAddPlayer(player.name)}
-                    accessibilityLabel={`أضف ${player.name} للاعبين`}
-                    accessibilityRole="button"
-                    style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
+                    style={styles.suggestionItem}
                   >
                     <Text style={[styles.suggestionText, { color: colors.text }]}>{player.name}</Text>
                   </Pressable>
@@ -306,9 +309,6 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({ label, selected
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
-        accessibilityLabel={`اختر فئة: ${label}`}
-        accessibilityRole="radio"
-        accessibilityState={{ selected }}
         style={[
           styles.categoryChip,
           {
@@ -350,8 +350,6 @@ const BouncyCounterButton: React.FC<BouncyCounterButtonProps> = ({ icon, onPress
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        accessibilityLabel="زر المحرر"
-        accessibilityRole="button"
         style={[styles.counterButton, { backgroundColor: `${color}20` }]}
       >
         {icon}
@@ -422,12 +420,7 @@ const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) =>
         { rotate: rotateAnim.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }) },
       ],
     }}>
-      <Pressable
-        onPress={onPress}
-        accessibilityLabel="أضف لاعب جديد"
-        accessibilityRole="button"
-        style={[styles.addButton, { backgroundColor: colors.accent }]}
-      >
+      <Pressable style={[styles.addButton, { backgroundColor: colors.accent }]}>
         <Plus size={24} color="#000" />
       </Pressable>
     </Animated.View>
@@ -459,12 +452,7 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
     <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
       <View style={[styles.playerItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.playerName, { color: colors.text }]}>{name}</Text>
-        <Pressable
-          onPress={handleRemove}
-          accessibilityLabel={`حذف ${name} من اللاعبين`}
-          accessibilityRole="button"
-          style={styles.removeButton}
-        >
+        <Pressable onPress={handleRemove} style={styles.removeButton}>
           <X size={20} color={colors.danger} />
         </Pressable>
       </View>
@@ -500,9 +488,6 @@ const BouncyStartButton: React.FC<BouncyStartButtonProps> = ({ onPress, disabled
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={disabled}
-        accessibilityLabel="ابدأ اللعبة"
-        accessibilityRole="button"
-        accessibilityState={{ disabled }}
         style={[
           styles.startButton,
           {
@@ -530,51 +515,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
     paddingHorizontal: 16,
   },
   backButton: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    padding: 16,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 16,
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 14,
     textAlign: 'right',
-    lineHeight: 20,
+  },
+  categoriesScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
   },
   categoriesRow: {
     flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
+    paddingRight: 16,
   },
   categoryChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
   },
   categoryText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
   counterRow: {
     flexDirection: 'row-reverse',
@@ -582,70 +569,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
     borderWidth: 1.5,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 8,
   },
   counterButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
   },
   counterValue: {
     fontSize: 32,
-    fontWeight: '800',
-    marginHorizontal: 36,
+    fontWeight: 'bold',
+    marginHorizontal: 32,
   },
   counterHint: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 16,
+    marginTop: 10,
   },
   inputContainer: {
     flexDirection: 'row-reverse',
-    gap: 12,
+    gap: 10,
   },
   input: {
     flex: 1,
-    height: 56,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 14,
     borderWidth: 1.5,
-    paddingHorizontal: 18,
-    fontSize: 15,
+    paddingHorizontal: 16,
+    fontSize: 16,
   },
   addButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   suggestionsContainer: {
     position: 'absolute',
-    top: '100%',
+    top: 100,
     left: 16,
     right: 16,
     borderRadius: 14,
-    borderWidth: 1.5,
+    borderWidth: 1,
     zIndex: 100,
     elevation: 5,
-    maxHeight: 220,
   },
   suggestionItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    padding: 14,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'right',
-    lineHeight: 18,
   },
   playersList: {
-    marginTop: 16,
-    gap: 12,
+    marginTop: 14,
+    gap: 10,
   },
   playerItem: {
     flexDirection: 'row-reverse',

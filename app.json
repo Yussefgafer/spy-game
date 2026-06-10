@@ -14,7 +14,19 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.spygame"
+      "package": "com.anonymous.spygame",
+      "minSdkVersion": 21,
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "buildType": "release",
+      "gradle": {
+        "properties": [
+          "org.gradle.jvmargs=-Xmx4096m",
+          "android.useAndroidX=true",
+          "android.enableJetifier=true",
+          "android.enableNewResourceIdGenerator=true"
+        ]
+      }
     },
     "web": {
       "favicon": ""

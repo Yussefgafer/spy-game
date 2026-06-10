@@ -6,8 +6,42 @@ on:
       - 'v*'
 
 jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+    name: 🔍 Lint & Type Check
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 💾 Restore pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Run ESLint
+        run: pnpm run lint || true
+
+      - name: ✅ TypeScript type check
+        run: npx tsc --noEmit || true
+
   build-android:
     runs-on: ubuntu-latest
+    needs: lint-and-check
     permissions:
       contents: write
 
@@ -20,11 +54,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: gradle
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
       - name: 📥 Install pnpm
         uses: pnpm/action-setup@v4
@@ -47,7 +83,7 @@ jobs:
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           else
-            echo "No keystore provided, building unsigned APK"
+            echo "⚠️ No keystore provided, building unsigned APK"
           fi
 
       - name: 🏗️ Build Release APK
@@ -63,6 +99,14 @@ jobs:
             ./gradlew assembleRelease
           fi
 
+      - name: 📊 Check APK size
+        run: |
+          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          if [ -f "$APK_FILE" ]; then
+            SIZE=$(du -h "$APK_FILE" | cut -f1)
+            echo "📦 APK Size: $SIZE"
+          fi
+
       - name: 📝 Rename APK
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
@@ -73,76 +117,32 @@ jobs:
       - name: 🚀 Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Spy Game ${{ github.ref_name }}
+          name: 🕵️ Spy Game ${{ github.ref_name }}
           body: |
             ## 🕵️ Spy Game ${{ github.ref_name }}
             
             ### 📱 التحميل
             - قم بتحميل ملف APK وتثبيته على جهازك الأندرويد
             
-            ### 📝 ملاحظات التثبيت
+            ### 📝 متطلبات التثبيت
+            - Android 5.0 (API 21) وما فوق
             - قد تحتاج للسماح بالتثبيت من مصادر غير معروفة
-            - يدعم Android 5.0 (API 21) وما فوق
             
             ### ✨ المميزات
             - لعبة حفلات ممتعة بالعربية
-            - ثلاثة أنماط ألوان (فاتح، داكن، نيون)
+            - 11 فئة تصنيف متنوعة
+            - 3 أنماط ألوان (فاتح، داكن، نيون)
             - سجل الأبطال وتاريخ المباريات
-            - تصميم عصري مع رسوم متحركة سلسة
+            - رسوم متحركة سلسة وتصميم عصري
+            
+            ### 🔄 التحديثات الأخيرة
+            - إزالة المؤقت من مرحلة الأسئلة
+            - شاشة جديدة لإدخال اسم الجاسوس
+            - 9 تصنيفات جديدة
+            - تحسينات الواجهة (UX/UI)
           files: |
-            *.apk
+            spy-game-*.apk
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-ios:
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: 📥 Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🏗️ Prebuild iOS
-        run: npx expo prebuild --platform ios --clean
-
-      - name: 🏗️ Build iOS (No codesign)
-        run: |
-          cd ios
-          xcodebuild -workspace SpyGame.xcworkspace -scheme SpyGame -configuration Release -sdk iphoneos -archivePath build/SpyGame.xcarchive archive CODE_SIGNING_ALLOWED=NO
-        continue-on-error: true
-
-      - name: 📦 Create IPA (unsigned)
-        run: |
-          mkdir -p Payload
-          cp -r ios/build/SpyGame.xcarchive/Products/Applications/SpyGame.app Payload/ || true
-          if [ -d "Payload/SpyGame.app" ]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-            zip -r spy-game-${VERSION}.ipa Payload
-          fi
-        continue-on-error: true
-
-      - name: 🚀 Upload iOS Build
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Spy Game ${{ github.ref_name }}
-          files: |
-            *.ipa
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true

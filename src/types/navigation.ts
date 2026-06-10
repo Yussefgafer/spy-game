@@ -15,19 +15,28 @@ export type RootStackParamList = {
     categoryName: string;
     categoryId: string;
   };
+  SpyIdentify: {
+    spyName: string;
+    secretWord: string;
+    categoryName: string;
+    categoryId: string;
+    players: string[];
+    spies: string[];
+  };
+  SpyGuess: {
+    spyName: string;
+    secretWord: string;
+    categoryName: string;
+    categoryId: string;
+    players: string[];
+    spies: string[];
+  };
   Vote: {
     players: string[];
     spies: string[];
     secretWord: string;
     categoryName: string;
     categoryId: string;
-  };
-  SpyGuess: {
-    categoryId: string;
-    correctWord: string;
-    players: string[];
-    spies: string[];
-    correctVoters: string[];
   };
   Results: {
     players: string[];

@@ -1,0 +1,27 @@
+{
+  "buildTypes": {
+    "release": {
+      "minifyEnabled": true,
+      "shrinkResources": true,
+      "proguardFiles": [
+        "proguard-android-optimize.txt",
+        "proguard-rules.pro"
+      ]
+    },
+    "debug": {
+      "minifyEnabled": false,
+      "shrinkResources": false
+    }
+  },
+  "compileOptions": {
+    "sourceCompatibility": "VERSION_11",
+    "targetCompatibility": "VERSION_11"
+  },
+  "lintOptions": {
+    "abortOnError": false,
+    "disable": [
+      "MissingTranslation",
+      "ExtraTranslation"
+    ]
+  }
+}

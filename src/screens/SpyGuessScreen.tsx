@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Timer, AlertTriangle, ArrowLeft, Zap, Eye, Sparkles } from 'lucide-react-native';
+import { Timer, AlertTriangle, ArrowLeft, Zap, Sparkles } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
@@ -19,7 +19,7 @@ export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SpyGuessRouteProp>();
-  const { categoryId, correctWord, players, spies, correctVoters } = route.params;
+  const { categoryId, correctWord, players, spies, categoryName } = route.params;
 
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
@@ -75,15 +75,13 @@ export const SpyGuessScreen: React.FC = () => {
       hapticError();
     }
 
-    // Navigate to results with all data
-    navigation.navigate('Results', {
+    // Navigate to Vote with all data
+    navigation.navigate('Vote', {
       players,
       spies,
       secretWord: correctWord,
-      categoryName: CATEGORIES.find((c) => c.id === categoryId)?.name || '',
+      categoryName,
       categoryId,
-      correctVoters,
-      spyGuessedCorrectly: isCorrect,
     });
   };
 
@@ -115,17 +113,6 @@ export const SpyGuessScreen: React.FC = () => {
           formatTime={formatTime}
           colors={colors}
         />
-      </PopInView>
-
-      {/* Spy Info */}
-      <PopInView delay={150}>
-        <View style={[styles.spyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.spyIconContainer, { backgroundColor: `${colors.danger}15` }]}>
-            <Eye size={24} color={colors.danger} />
-          </View>
-          <Text style={[styles.spyLabel, { color: colors.textMuted }]}>الجاسوس:</Text>
-          <Text style={[styles.spyName, { color: colors.danger }]}>{spies.join('، ')}</Text>
-        </View>
       </PopInView>
 
       {/* Word Options */}
@@ -265,9 +252,6 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        accessibilityLabel={`اختر الكلمة: ${word}`}
-        accessibilityRole="radio"
-        accessibilityState={{ selected }}
         style={[
           styles.wordOption,
           {
@@ -314,9 +298,6 @@ const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord,
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={!selectedWord}
-        accessibilityLabel="تأكيد الكلمة المختارة"
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !selectedWord }}
         style={[
           styles.confirmButton,
           {
@@ -341,18 +322,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: 16,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: 'bold',
   },
   headerSubtitle: {
-    fontSize: 13,
-    marginTop: 8,
-    lineHeight: 18,
+    fontSize: 14,
+    marginTop: 6,
   },
   timerCard: {
     flexDirection: 'row-reverse',
@@ -360,52 +340,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 16,
     marginTop: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
-    borderRadius: 18,
+    padding: 18,
+    borderRadius: 20,
     borderWidth: 2,
     gap: 14,
   },
   timerText: {
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
   },
   urgentContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   urgentText: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  spyCard: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    gap: 12,
-  },
-  spyIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spyLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  spyName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -413,45 +366,43 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   sectionTitle: {
-    fontSize: 14,
-    marginBottom: 14,
+    fontSize: 15,
+    marginBottom: 12,
     textAlign: 'right',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   wordOption: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 14,
+    padding: 18,
+    borderRadius: 16,
     borderWidth: 1.5,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   wordText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
     flex: 1,
   },
   checkIcon: {
-    marginLeft: 12,
+    marginLeft: 10,
   },
   footer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   confirmButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 60,
-    borderRadius: 16,
+    height: 58,
+    borderRadius: 18,
     borderWidth: 1.5,
-    gap: 12,
+    gap: 10,
   },
   confirmButtonText: {
     fontSize: 18,
