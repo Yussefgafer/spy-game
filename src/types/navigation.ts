@@ -37,6 +37,13 @@ export type RootStackParamList = {
     secretWord: string;
     categoryName: string;
     categoryId: string;
+    /**
+     * هل خمّن الجاسوس الكلمة السرية بشكل صحيح؟
+     * - undefined: لم يدخل الجاسوس مرحلة التخمين (تخطّي مباشر)
+     * - true: خمّن صح
+     * - false: خمّن خطأ أو انتهى الوقت
+     */
+    spyGuessedCorrectly?: boolean;
   };
   Results: {
     players: string[];
@@ -45,6 +52,10 @@ export type RootStackParamList = {
     categoryName: string;
     categoryId: string;
     correctVoters: string[];
+    /**
+     * هل خمّن الجاسوس الكلمة السرية بشكل صحيح؟
+     * false الافتراضي (الجاسوس لم يخمن أو خمّن خطأ).
+     */
     spyGuessedCorrectly: boolean;
   };
   Leaderboard: undefined;
