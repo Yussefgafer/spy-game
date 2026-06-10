@@ -7,14 +7,14 @@ import { hapticLight } from '../utils/haptics';
 export interface BouncyBackButtonProps {
   onPress: () => void;
   colors: ThemeColors;
-  /** الأيقونة المستخدمة - الافتراضي ChevronRight */
+  /** الأيقونة المستخدمة - الافتراضي ChevronLeft (RTL: سهم يشير لليسار) */
   icon?: 'chevronRight' | 'chevronLeft';
 }
 
-export const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({ 
-  onPress, 
-  colors, 
-  icon = 'chevronRight' 
+export const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({
+  onPress,
+  colors,
+  icon = 'chevronLeft',
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -34,7 +34,7 @@ export const BouncyBackButton: React.FC<BouncyBackButtonProps> = ({
     ]).start();
   };
 
-  const IconComponent = icon === 'chevronLeft' ? ChevronLeft : ChevronRight;
+  const IconComponent = icon === 'chevronRight' ? ChevronRight : ChevronLeft;
 
   return (
     <Animated.View style={{
