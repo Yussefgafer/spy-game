@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus, Minus, X, Play, Sparkles, Users } from 'lucide-react-native';
+import { X, Play, Sparkles, Users } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
@@ -24,7 +24,6 @@ export const SetupScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].id);
-  const [spyCount, setSpyCount] = useState(1);
   const [players, setPlayers] = useState<string[]>([]);
 
   useEffect(() => {
@@ -33,7 +32,6 @@ export const SetupScreen: React.FC = () => {
       if (prefs) {
         setPlayers(prefs.players);
         setSelectedCategory(prefs.categoryId);
-        setSpyCount(prefs.spyCount);
       }
     };
     loadSavedPrefs();
@@ -72,11 +70,11 @@ export const SetupScreen: React.FC = () => {
     await savePreferences({
       players,
       categoryId: selectedCategory,
-      spyCount,
     });
 
     const shuffledPlayers = shuffleArray(players);
-    const selectedSpies = shuffledPlayers.slice(0, spyCount);
+    // جاسوس واحد فقط — مؤقتاً حتى يتم دعم جواسيس متعددين
+    const selectedSpies: string[] = [shuffledPlayers[0]];
 
     const category = CATEGORIES.find((c) => c.id === selectedCategory);
     const shuffledWords = shuffleArray(category?.words || []);
@@ -91,7 +89,6 @@ export const SetupScreen: React.FC = () => {
     });
   };
 
-  const maxSpies = Math.max(1, Math.floor(players.length / 2) || 1);
   const isPlayersFull = players.length >= MAX_PLAYERS;
 
   return (
@@ -149,42 +146,8 @@ export const SetupScreen: React.FC = () => {
           </View>
         </PopInView>
 
-        {/* Spy Count */}
-        <PopInView delay={300}>
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              🕵️ عدد الجواسيس
-            </Text>
-            <View
-              style={[
-                styles.counterRow,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              <BouncyCounterButton
-                icon={<Minus size={28} color={colors.accent} />}
-                onPress={() => {
-                  hapticLight();
-                  setSpyCount(Math.max(1, spyCount - 1));
-                }}
-              />
-              <AnimatedCounter value={spyCount} colors={colors} />
-              <BouncyCounterButton
-                icon={<Plus size={28} color={colors.accent} />}
-                onPress={() => {
-                  hapticLight();
-                  setSpyCount(Math.min(maxSpies, spyCount + 1));
-                }}
-              />
-            </View>
-            <Text style={[styles.counterHint, { color: colors.textMuted }]}>
-              الحد الأقصى: {maxSpies} جاسوس
-            </Text>
-          </View>
-        </PopInView>
-
         {/* Add Players */}
-        <PopInView delay={400}>
+        <PopInView delay={300}>
           <View style={styles.section}>
             <View style={styles.playersHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -326,85 +289,6 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
         </Text>
       </Pressable>
     </Animated.View>
-  );
-};
-
-interface BouncyCounterButtonProps {
-  icon: React.ReactNode;
-  onPress: () => void;
-}
-
-const BouncyCounterButton: React.FC<BouncyCounterButtonProps> = ({ icon, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.7,
-      tension: 600,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1.2,
-      tension: 500,
-      friction: 6,
-      useNativeDriver: true,
-    }).start(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 400,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
-    });
-    onPress();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.counterButton}
-      >
-        {icon}
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-interface AnimatedCounterProps {
-  value: number;
-  colors: ThemeColors;
-}
-
-const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const prevValue = useRef(value);
-
-  useEffect(() => {
-    if (prevValue.current !== value) {
-      Animated.sequence([
-        Animated.spring(scaleAnim, { toValue: 1.4, tension: 500, friction: 8, useNativeDriver: true }),
-        Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 10, useNativeDriver: true }),
-      ]).start();
-      prevValue.current = value;
-    }
-  }, [value]);
-
-  return (
-    <Animated.Text
-      style={[
-        styles.counterValue,
-        { color: colors.text, transform: [{ scale: scaleAnim }] },
-      ]}
-    >
-      {value}
-    </Animated.Text>
   );
 };
 
@@ -589,32 +473,6 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  counterRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 8,
-  },
-  counterButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.04)',
-  },
-  counterValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginHorizontal: 32,
-  },
-  counterHint: {
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 10,
   },
   playersList: {
     marginTop: 14,
