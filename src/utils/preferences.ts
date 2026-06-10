@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CATEGORIES } from '../constants/words';
 
 const KEYS = {
   LAST_PLAYERS: 'last_players',
@@ -41,9 +42,13 @@ export const loadPreferences = async (): Promise<SavedPreferences | null> => {
       return null;
     }
 
+    // التحقق من صحة التصنيف لتجنب الانهيار بعد تعديل كلمات words.ts
+    const categoryExists = CATEGORIES.some((c) => c.id === categoryId);
+    const validCategoryId = categoryExists ? categoryId : CATEGORIES[0].id;
+
     return {
       players: JSON.parse(playersStr),
-      categoryId,
+      categoryId: validCategoryId,
     };
   } catch (error) {
     console.error('خطأ أثناء تحميل الإعدادات:', error);
