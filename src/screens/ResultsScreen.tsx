@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,42 +16,110 @@ export const ResultsScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResultsRouteProp>();
-  const { players, spies, secretWord, categoryName, correctVoters, spyGuessedCorrectly } = route.params;
+  const { players, spies, secretWord, categoryName, correctVoters, spyGuessedWord, winner } = route.params;
 
   const [saved, setSaved] = useState(false);
 
+  // 🏆 نظام النقاط (قاعدة اللعبة الجديدة):
+  //
+  // [1] الأبرياء فازوا (winner = 'PLAYERS') + الجاسوس لم يخمّن (spyGuessedWord = false):
+  //     - كل لاعب بريء صوّت على جاسوس يأخذ:
+  //       pointsPerVoter = floor( (playersCount × 10) / correctVotersCount )
+  //     - الجواسيس يأخذون 0.
+  //     - مثال: 3 لاعبين، 1 صوّت صح: 30 نقطة له، الجواسيس 0.
+  //     - مثال: 4 لاعبين، 2 صوّتوا صح: floor(40/2) = 20 لكل واحد.
+  //
+  // [2] الأبرياء فازوا + الجاسوس خمّن (winner = 'PLAYERS', spyGuessedWord = true):
+  //     - نفس [1] (الأبرياء يأخذون نقاطهم).
+  //     - لكن الجواسيس لا يأخذون شيئاً لأن الأبرياء كشفوهم.
+  //     - (هذا السيناريو غريب: الجاسوس خمّن صح لكن الأبرياء صوّتوا عليه أيضاً.)
+  //
+  // [3] الجواسيس فازوا + خمّنوا (winner = 'SPY', spyGuessedWord = true):
+  //     - الأبرياء لا يأخذون نقاط (الجواسيس فازوا).
+  //     - كل جاسوس يأخذ:
+  //       pointsPerSpy = floor( (playersCount × 10 / 2) / spiesCount )
+  //     - مثال: 5 لاعبين، 2 جواسيس: floor(50/2/2) = floor(12.5) = 12 لكل جاسوس.
+  //     - مثال: 4 لاعبين، 1 جاسوس: floor(40/2) = 20.
+  //
+  // [4] الجواسيس فازوا بدون تخمين (winner = 'SPY', spyGuessedWord = false):
+  //     - "الهروب": لا أحد صوّت على جاسوس (correctVoters = []).
+  //     - كل جاسوس يأخذ:
+  //       pointsPerSpy = floor( playersCount / spiesCount )
+  //     - مثال: 5 لاعبين، 1 جاسوس: floor(5/1) = 5.
+  //     - مثال: 5 لاعبين، 2 جواسيس: floor(5/2) = 2 لكل واحد (0.5 تُتجاهل).
+  //     - مثال: 3 لاعبين، 1 جاسوس: floor(3/1) = 3.
+  //     - مثال: 4 لاعبين، 2 جواسيس: floor(4/2) = 2 لكل واحد.
+  //
+  // قاعدة الكسور: floor() — أي 0.9 تصبح 0.
+  const playerResults = useMemo(() => {
+    const playersCount = players.length;
+    const spiesCount = spies.length;
+    const correctVotersCount = correctVoters.length;
+
+    return players.map((name) => {
+      const isSpy = spies.includes(name);
+      const isCorrectVoter = correctVoters.includes(name);
+      let pointsGained = 0;
+
+      if (winner === 'PLAYERS') {
+        // الأبرياء فازوا.
+        // اللاعب الذي صوّت صح يأخذ نقاطه.
+        // (الجواسيس لا يأخذون شيئاً في كلتا الحالتين: سواء الجاسوس خمّن أم لا.)
+        if (!isSpy && isCorrectVoter) {
+          // الصيغة: floor((playersCount × 10) / correctVotersCount)
+          // القسمة على 0 محمية لأن winner = 'PLAYERS' → correctVotersCount ≥ 1.
+          pointsGained = Math.floor((playersCount * 10) / correctVotersCount);
+        }
+        // الجواسيس: 0 نقطة.
+      } else {
+        // winner === 'SPY' (الجواسيس فازوا).
+        if (isSpy) {
+          if (spyGuessedWord) {
+            // الحالة [3]: خمّنوا الكلمة
+            // الصيغة: floor((playersCount × 10 / 2) / spiesCount)
+            pointsGained = Math.floor((playersCount * 10 / 2) / spiesCount);
+          } else {
+            // الحالة [4]: هروب (الجميع skip)
+            // الصيغة: floor(playersCount / spiesCount)
+            pointsGained = Math.floor(playersCount / spiesCount);
+          }
+        }
+        // الأبرياء: 0 نقطة.
+      }
+
+      return {
+        name,
+        role: isSpy ? ('SPY' as const) : ('PLAYER' as const),
+        votedCorrectly: isCorrectVoter,
+        pointsGained,
+      };
+    });
+  }, [players, spies, correctVoters, spyGuessedWord, winner]);
+
+  // مجموع النقاط في هذه الجولة (للحفظ في DB)
+  // الصيغة القديمة: playersCount × 10 — مع الـ system الجديد هذا غير منطقي.
+  // الحل: مجموع نقاط كل اللاعبين.
+  const totalPoints = useMemo(
+    () => playerResults.reduce((sum, p) => sum + p.pointsGained, 0),
+    [playerResults]
+  );
+
   useEffect(() => {
     if (saved) return;
-    
-    // Save result with proper data
     const success = saveMatchResult(
       categoryName,
       secretWord,
       spies,
-      spyGuessedCorrectly ? 'SPY' : 'PLAYERS',
-      players.length * 10,
-      players.map((name) => {
-        const isSpy = spies.includes(name);
-        // الجاسوس الفائز يحصل على 20 نقطة، اللاعب الذي صوّت صحيح يحصل على 10 نقاط
-        let pointsGained = 0;
-        if (isSpy && spyGuessedCorrectly) {
-          pointsGained = 20;
-        } else if (!isSpy && correctVoters.includes(name)) {
-          pointsGained = 10;
-        }
-        return {
-          name,
-          role: isSpy ? 'SPY' : 'PLAYER',
-          votedCorrectly: correctVoters.includes(name),
-          pointsGained,
-        };
-      })
+      winner,
+      totalPoints,
+      playerResults
     );
     if (success) setSaved(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const spyWins = spyGuessedCorrectly;
+  // للتوافق مع BouncyWinnerCard — تستقبل spyWins: boolean
+  const spyWins = winner === 'SPY';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -67,6 +135,8 @@ export const ResultsScreen: React.FC = () => {
         <PopInView delay={100}>
           <BouncyWinnerCard
             spyWins={spyWins}
+            spyGuessedWord={spyGuessedWord}
+            winner={winner}
             colors={colors}
           />
         </PopInView>
@@ -93,11 +163,12 @@ export const ResultsScreen: React.FC = () => {
           />
         </PopInView>
 
-        {/* Correct Voters */}
-        {correctVoters.length > 0 && (
+        {/* Correct Voters (إذا فاز الأبرياء) */}
+        {winner === 'PLAYERS' && correctVoters.length > 0 && (
           <PopInView delay={400}>
             <BouncyCorrectVotersCard
               correctVoters={correctVoters}
+              playersCount={players.length}
               colors={colors}
             />
           </PopInView>
@@ -111,20 +182,17 @@ export const ResultsScreen: React.FC = () => {
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>اللاعبون ({players.length})</Text>
             </View>
             <View style={styles.playersList}>
-              {players.map((player, index) => {
-                const isSpy = spies.includes(player);
-                const votedCorrectly = correctVoters.includes(player);
-                return (
-                  <PopInView key={player} delay={550 + index * 50}>
-                    <BouncyPlayerRow
-                      player={player}
-                      isSpy={isSpy}
-                      votedCorrectly={votedCorrectly}
-                      colors={colors}
-                    />
-                  </PopInView>
-                );
-              })}
+              {playerResults.map((p, index) => (
+                <PopInView key={p.name} delay={550 + index * 50}>
+                  <BouncyPlayerRow
+                    player={p.name}
+                    isSpy={p.role === 'SPY'}
+                    votedCorrectly={p.votedCorrectly}
+                    pointsGained={p.pointsGained}
+                    colors={colors}
+                  />
+                </PopInView>
+              ))}
             </View>
           </View>
         </PopInView>
@@ -154,10 +222,12 @@ export const ResultsScreen: React.FC = () => {
 // Bouncy Winner Card
 interface BouncyWinnerCardProps {
   spyWins: boolean;
+  spyGuessedWord: boolean;
+  winner: 'SPY' | 'PLAYERS';
   colors: ThemeColors;
 }
 
-const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, colors }) => {
+const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, spyGuessedWord, winner, colors }) => {
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const rotateAnim = useRef(new Animated.Value(-10)).current;
 
@@ -167,6 +237,29 @@ const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, colors }) 
       Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  // نصوص مختلفة حسب السيناريو (3 حالات للجواسيس، 1 للأبرياء)
+  const getTitleAndSubtitle = (): { title: string; subtitle: string } => {
+    if (winner === 'PLAYERS') {
+      return {
+        title: 'فاز الأبرياء!',
+        subtitle: 'تمكن الأبرياء من كشف الجاسوس 🎊',
+      };
+    }
+    // winner === 'SPY'
+    if (spyGuessedWord) {
+      return {
+        title: 'فاز الجاسوس!',
+        subtitle: 'اكتشف الجاسوس الكلمة السرية 👏',
+      };
+    }
+    return {
+      title: 'فاز الجاسوس!',
+      subtitle: 'نجا الجاسوس من التصويت 🏃‍♂️',
+    };
+  };
+
+  const { title, subtitle } = getTitleAndSubtitle();
 
   return (
     <Animated.View
@@ -183,20 +276,14 @@ const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, colors }) 
     >
       <FloatingView distance={6} duration={2500}>
         <PulseView maxScale={1.15} duration={1500}>
-          {spyWins ? (
-            <Text style={styles.winnerEmoji}>🕵️‍♂️</Text>
-          ) : (
-            <Text style={styles.winnerEmoji}>🎉</Text>
-          )}
+          <Text style={styles.winnerEmoji}>{spyWins ? '🕵️‍♂️' : '🎉'}</Text>
         </PulseView>
       </FloatingView>
       <Text style={[styles.winnerTitle, { color: spyWins ? colors.danger : colors.accent }]}>
-        {spyWins ? 'فاز الجاسوس!' : 'فاز الأبرياء!'}
+        {title}
       </Text>
       <Text style={[styles.winnerSubtitle, { color: colors.textMuted }]}>
-        {spyWins 
-          ? 'اكتشف الجاسوس الكلمة السرية 👏' 
-          : 'تمكن الأبرياء من كشف الجاسوس 🎊'}
+        {subtitle}
       </Text>
     </Animated.View>
   );
@@ -228,12 +315,17 @@ const BouncyInfoCard: React.FC<BouncyInfoCardProps> = ({ icon, label, value, val
 };
 
 // Bouncy Correct Voters Card
+// يعرض عدد النقاط الديناميكي (نظام النقاط الجديد)
 interface BouncyCorrectVotersCardProps {
   correctVoters: string[];
+  playersCount: number;
   colors: ThemeColors;
 }
 
-const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ correctVoters, colors }) => {
+const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ correctVoters, playersCount, colors }) => {
+  // نقاط ديناميكية حسب قاعدة اللعبة الجديدة
+  const pointsPerVoter = Math.floor((playersCount * 10) / correctVoters.length);
+
   return (
     <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.infoHeader}>
@@ -243,20 +335,24 @@ const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ corre
         <Text style={[styles.infoLabel, { color: colors.textMuted }]}>صوّتوا بشكل صحيح</Text>
       </View>
       <Text style={[styles.infoValue, { color: colors.text }]}>{correctVoters.join('، ')}</Text>
-      <Text style={[styles.pointsText, { color: colors.accent }]}>🏆 +10 نقاط لكل منهم</Text>
+      <Text style={[styles.pointsText, { color: colors.accent }]}>
+        🏆 +{pointsPerVoter} نقطة لكل منهم
+      </Text>
     </View>
   );
 };
 
 // Bouncy Player Row
+// يعرض نقاط ديناميكية من نظام النقاط الجديد
 interface BouncyPlayerRowProps {
   player: string;
   isSpy: boolean;
   votedCorrectly: boolean;
+  pointsGained: number;
   colors: ThemeColors;
 }
 
-const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly, colors }) => {
+const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly, pointsGained, colors }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   return (
@@ -269,9 +365,9 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedC
               <Text style={[styles.badgeText, { color: colors.danger }]}>🕵️ جاسوس</Text>
             </View>
           )}
-          {votedCorrectly && (
+          {pointsGained > 0 && (
             <View style={[styles.badge, { backgroundColor: `${colors.accent}20` }]}>
-              <Text style={[styles.badgeText, { color: colors.accent }]}>⭐ +10</Text>
+              <Text style={[styles.badgeText, { color: colors.accent }]}>⭐ +{pointsGained}</Text>
             </View>
           )}
         </View>
