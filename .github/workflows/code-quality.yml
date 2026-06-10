@@ -2,7 +2,7 @@ name: Code Quality Check
 
 on:
   push:
-    branches: [ai-code-review-fixes, master, dev]
+    branches:
   pull_request:
 
 concurrency:
@@ -34,7 +34,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "=== Fallow Report ===" > fallow-report.txt
-          npx fallow check >> fallow-report.txt 2>&1 || true
+          npx fallow >> fallow-report.txt 2>&1 || true
 
       - name: Upload Quality Reports
         uses: actions/upload-artifact@v4
