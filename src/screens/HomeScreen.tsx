@@ -74,7 +74,12 @@ export const HomeScreen: React.FC = () => {
 
       {/* Settings Button - Fixed at bottom */}
       <PopInView delay={700}>
-        <View style={styles.footer}>
+        <View
+          style={[
+            styles.footer,
+            { borderTopColor: colors.border },
+          ]}
+        >
           <BouncySettingsButton
             colors={colors}
             onPress={() => navigation.navigate('Settings')}
@@ -327,7 +332,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingTop: 28,
     borderTopWidth: 1.5,
-    borderTopColor: colors.border,
   },
   settingsButton: {
     flexDirection: 'row-reverse',
