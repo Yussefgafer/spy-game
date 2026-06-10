@@ -110,13 +110,10 @@ export const SettingsScreen: React.FC = () => {
       {/* Clear Data Modal */}
       <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
         <View style={styles.modalOverlay}>
-          <PopInView>
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-              <FloatingView distance={4} duration={2000}>
-                <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
-                  <AlertTriangle size={36} color={colors.danger} />
-                </View>
-              </FloatingView>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalIcon, { backgroundColor: `${colors.danger}20` }]}>
+                <AlertTriangle size={32} color={colors.danger} />
+              </View>
               <Text style={[styles.modalTitle, { color: colors.text }]}>⚠️ تنبيه هام</Text>
               <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
                 سيتم حذف جميع اللاعبين والنقاط وتاريخ المباريات نهائياً!
@@ -136,7 +133,7 @@ export const SettingsScreen: React.FC = () => {
                 />
               </View>
             </View>
-          </PopInView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -431,39 +428,40 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    maxWidth: 340,
-    borderRadius: 24,
-    padding: 28,
+    maxWidth: 320,
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
   },
   modalIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 14,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 12,
   },
   modalMessage: {
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 28,
+    lineHeight: 20,
+    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row-reverse',
-    gap: 12,
+    gap: 10,
     width: '100%',
   },
   modalButton: {
     flex: 1,
-    height: 52,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
