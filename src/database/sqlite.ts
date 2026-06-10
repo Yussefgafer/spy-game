@@ -233,20 +233,28 @@ export const saveMatchResult = (
 
     // 2. حفظ تفاصيل اللاعبين وتحديث إحصائياتهم التراكمية
     for (const player of playersDetails) {
+      const trimmedName = player.name.trim();
+
       // أ. حفظ التفاصيل في جدول match_details
       database.runSync(
         `INSERT INTO match_details (match_id, player_name, role, voted_correctly, points_gained) 
          VALUES (?, ?, ?, ?, ?);`,
         [
           matchId,
-          player.name,
+          trimmedName,
           player.role,
           player.votedCorrectly ? 1 : 0,
           player.pointsGained,
         ]
       );
 
-      // ب. تحديث جدول players التراكمي
+      // ب. التأكد من وجود اللاعب في جدول players (في حال تم مسح قاعدة البيانات وبقي اللاعب في AsyncStorage)
+      database.runSync(
+        'INSERT OR IGNORE INTO players (name) VALUES (?);',
+        [trimmedName]
+      );
+
+      // ج. تحديث جدول players التراكمي
       const isSpy = player.role === 'SPY';
       const isWinner = (isSpy && winner === 'SPY') || (!isSpy && winner === 'PLAYERS');
 
@@ -261,7 +269,7 @@ export const saveMatchResult = (
           player.pointsGained,
           isSpy ? 1 : 0,
           (isSpy && isWinner) ? 1 : 0,
-          player.name,
+          trimmedName,
         ]
       );
     }
