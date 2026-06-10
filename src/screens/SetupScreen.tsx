@@ -1,32 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, TextInput, Keyboard, Alert, Animated } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Keyboard, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus, X, Minus, Play, Sparkles } from 'lucide-react-native';
+import { Minus, Play, Sparkles, Users } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
 import { shuffleArray } from '../utils/shuffle';
-import { searchPlayers, addPlayer, Player } from '../database/sqlite';
+import { Player } from '../database/sqlite';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
 import { loadPreferences, savePreferences } from '../utils/preferences';
 import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
+import { AutoCompleteInput } from '../components/AutoCompleteInput';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const MAX_PLAYERS = 10;
+const MIN_PLAYERS = 3;
 
 export const SetupScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
-  const inputRef = useRef<TextInput>(null);
 
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].id);
   const [spyCount, setSpyCount] = useState(1);
   const [players, setPlayers] = useState<string[]>([]);
-  const [playerName, setPlayerName] = useState('');
-  const [suggestions, setSuggestions] = useState<Player[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  // Load saved preferences on mount
+
   useEffect(() => {
     const loadSavedPrefs = async () => {
       const prefs = await loadPreferences();
@@ -39,65 +39,47 @@ export const SetupScreen: React.FC = () => {
     loadSavedPrefs();
   }, []);
 
-  const handleSearchPlayers = async (text: string) => {
-    setPlayerName(text);
-    if (text.trim()) {
-      const results = await searchPlayers(text);
-      const filtered = results.filter((p) => !players.includes(p.name));
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleAddPlayer = (name: string) => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
-    if (players.includes(trimmedName)) {
+  /**
+   * يُستدعى من AutoCompleteInput عند اختيار/إضافة لاعب.
+   * - يضيف الاسم لقائمة المباراة.
+   * - يحمي من التكرار (ActivePlayers filter في AutoComplete أيضاً).
+   * - يحمي من تجاوز الحد الأقصى.
+   */
+  const handlePlayerAdded = (player: Player) => {
+    if (players.includes(player.name)) {
       hapticError();
       return;
     }
-    if (players.length >= 10) {
-      Alert.alert('تنبيه', 'الحد الأقصى 10 لاعبين');
+    if (players.length >= MAX_PLAYERS) {
+      Alert.alert('تنبيه', `الحد الأقصى ${MAX_PLAYERS} لاعبين`);
       return;
     }
-    hapticSuccess();
-    addPlayer(trimmedName);
-    setPlayers([...players, trimmedName]);
-    setPlayerName('');
-    setSuggestions([]);
-    setShowSuggestions(false);
-    Keyboard.dismiss();
+    setPlayers((prev) => [...prev, player.name]);
   };
 
   const handleRemovePlayer = (name: string) => {
     hapticLight();
-    setPlayers(players.filter((p) => p !== name));
+    setPlayers((prev) => prev.filter((p) => p !== name));
   };
 
   const handleStartGame = async () => {
-    if (players.length < 3) {
+    if (players.length < MIN_PLAYERS) {
       hapticError();
-      Alert.alert('تنبيه', 'الحد الأدنى 3 لاعبين');
+      Alert.alert('تنبيه', `الحد الأدنى ${MIN_PLAYERS} لاعبين`);
       return;
     }
 
     hapticSuccess();
 
-    // Save preferences for next time
     await savePreferences({
       players,
       categoryId: selectedCategory,
       spyCount,
     });
 
-    // Shuffle and select spies
     const shuffledPlayers = shuffleArray(players);
     const selectedSpies = shuffledPlayers.slice(0, spyCount);
 
-    // Select secret word
     const category = CATEGORIES.find((c) => c.id === selectedCategory);
     const shuffledWords = shuffleArray(category?.words || []);
     const secretWord = shuffledWords[0];
@@ -112,6 +94,7 @@ export const SetupScreen: React.FC = () => {
   };
 
   const maxSpies = Math.max(1, Math.floor(players.length / 2) || 1);
+  const isPlayersFull = players.length >= MAX_PLAYERS;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -166,7 +149,7 @@ export const SetupScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>🕵️ عدد الجواسيس</Text>
             <View style={[styles.counterRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <BouncyCounterButton
-                icon={<Minus size={28} color={colors.accent} />}
+                icon={<Minus size={28} color={colors.accent} />)}
                 onPress={() => {
                   hapticLight();
                   setSpyCount(Math.max(1, spyCount - 1));
@@ -175,7 +158,7 @@ export const SetupScreen: React.FC = () => {
               />
               <AnimatedCounter value={spyCount} colors={colors} />
               <BouncyCounterButton
-                icon={<Plus size={28} color={colors.accent} />}
+                icon={<PlusIcon color={colors.accent} />}
                 onPress={() => {
                   hapticLight();
                   setSpyCount(Math.min(maxSpies, spyCount + 1));
@@ -192,49 +175,25 @@ export const SetupScreen: React.FC = () => {
         {/* Add Players */}
         <PopInView delay={400}>
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              👥 اللاعبون ({players.length}/10)
-            </Text>
-
-            {/* Input Field */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={inputRef}
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
-                ]}
-                value={playerName}
-                onChangeText={handleSearchPlayers}
-                placeholder="اكتب اسم اللاعب..."
-                placeholderTextColor={colors.textMuted}
-                textAlign="right"
-                onSubmitEditing={() => handleAddPlayer(playerName)}
-                returnKeyType="done"
-              />
-              <BouncyAddButton
-                onPress={() => handleAddPlayer(playerName)}
-                colors={colors}
-              />
+            <View style={styles.playersHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                👥 اللاعبون
+              </Text>
+              <View style={[styles.playersBadge, { backgroundColor: colors.accentMuted }]}>
+                <Users size={14} color={colors.accent} strokeWidth={2.5} />
+                <Text style={[styles.playersBadgeText, { color: colors.accent }]}>
+                  {players.length}/{MAX_PLAYERS}
+                </Text>
+              </View>
             </View>
 
-            {/* Suggestions — now relative, sits inside section flow
-                (below input, above playersList). Replaces the
-                position: absolute + top: 100 hack that broke when
-                input height changed. */}
-            {showSuggestions && suggestions.length > 0 && (
-              <View style={[styles.suggestionsContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                {suggestions.map((player, index) => (
-                  <Pressable
-                    key={player.id}
-                    onPress={() => handleAddPlayer(player.name)}
-                    style={styles.suggestionItem}
-                  >
-                    <Text style={[styles.suggestionText, { color: colors.text }]}>{player.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            {/* Auto-complete input with integrated add button */}
+            <AutoCompleteInput
+              onPlayerAdded={handlePlayerAdded}
+              activePlayers={players}
+              disabled={isPlayersFull}
+              placeholder={isPlayersFull ? `وصلت للحد الأقصى (${MAX_PLAYERS})` : 'ابحث عن صديق أو اكتب اسم جديد...'}
+            />
 
             {/* Players List */}
             <View style={styles.playersList}>
@@ -257,9 +216,9 @@ export const SetupScreen: React.FC = () => {
         <View style={styles.footer}>
           <BouncyStartButton
             onPress={handleStartGame}
-            disabled={players.length < 3}
+            disabled={players.length < MIN_PLAYERS}
             colors={colors}
-            canStart={players.length >= 3}
+            canStart={players.length >= MIN_PLAYERS}
           />
         </View>
       </SlideInBounceView>
@@ -388,46 +347,10 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, colors }) => {
   );
 };
 
-// Bouncy Add Button
-interface BouncyAddButtonProps {
-  onPress: () => void;
-  colors: ThemeColors;
-}
-
-const BouncyAddButton: React.FC<BouncyAddButtonProps> = ({ onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.85, tension: 400, friction: 10, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 90, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1.2, tension: 500, friction: 6, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start(() => {
-      Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 8, useNativeDriver: true }).start();
-    });
-    onPress();
-  };
-
-  return (
-    <Animated.View style={{
-      transform: [
-        { scale: scaleAnim },
-        { rotate: rotateAnim.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }) },
-      ],
-    }}>
-      <Pressable style={[styles.addButton, { backgroundColor: colors.accent }]}>
-        <Plus size={24} color="#000" />
-      </Pressable>
-    </Animated.View>
-  );
+// Inline Plus icon component (avoids importing unused Plus in main scope)
+const PlusIcon: React.FC<{ color: string; size?: number }> = ({ color, size = 28 }) => {
+  const { Plus } = require('lucide-react-native');
+  return <Plus size={size} color={color} />;
 };
 
 // Bouncy Player Item
@@ -547,6 +470,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     textAlign: 'right',
   },
+  playersHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  playersBadge: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    gap: 4,
+  },
+  playersBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   categoriesScroll: {
     marginHorizontal: -16,
     paddingHorizontal: 16,
@@ -590,46 +531,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row-reverse',
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    height: 54,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  addButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  suggestionsContainer: {
-    // Was: position: 'absolute', top: 100 (magic number depending on
-    // inputContainer height). When input height changed (placeholder,
-    // font scale, etc), suggestions floated over playersList.
-    // Fix: relative position. Container sits in normal flow below
-    // inputContainer and above playersList, scrolls naturally.
-    marginTop: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    zIndex: 100,
-    elevation: 5,
-  },
-  suggestionItem: {
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  suggestionText: {
-    fontSize: 15,
-    textAlign: 'right',
   },
   playersList: {
     marginTop: 14,
