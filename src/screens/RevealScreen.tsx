@@ -21,7 +21,7 @@ export const RevealScreen: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
-  
+
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,16 +30,7 @@ export const RevealScreen: React.FC = () => {
   const isSpy = spies.includes(currentPlayer);
   const isLastPlayer = currentIndex === players.length - 1;
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (revealTimerRef.current) {
-        clearTimeout(revealTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Cleanup when index changes
+  // Cleanup when currentIndex changes (also runs on unmount per React rules)
   useEffect(() => {
     return () => {
       if (revealTimerRef.current) {
@@ -103,10 +94,10 @@ export const RevealScreen: React.FC = () => {
     // Clear timer reference
     revealTimerRef.current = null;
     setIsPressing(false);
-    
+
     // Success haptic
     hapticSuccess();
-    
+
     setIsRevealed(true);
   };
 
@@ -117,7 +108,7 @@ export const RevealScreen: React.FC = () => {
     }
 
     hapticLight();
-    
+
     if (isLastPlayer) {
       navigation.navigate('Gameplay', { players, spies, secretWord, categoryName, categoryId });
     } else {
@@ -126,7 +117,7 @@ export const RevealScreen: React.FC = () => {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
       }
-      
+
       setCurrentIndex(currentIndex + 1);
       setIsRevealed(false);
       setIsPressing(false);
@@ -172,7 +163,7 @@ export const RevealScreen: React.FC = () => {
       {/* Player Card */}
       <View style={styles.cardContainer}>
         <Text style={[styles.playerName, { color: colors.text }]}>{currentPlayer}</Text>
-        
+
         <Animated.View
           style={[
             styles.card,
