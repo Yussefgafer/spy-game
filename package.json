@@ -18,6 +18,7 @@
     "expo": "~54.0.0",
     "expo-haptics": "~14.1.4",
     "expo-sqlite": "~15.2.14",
+// fallow-ignore-next-line: unused-exports
     "expo-status-bar": "~2.2.3",
     "lucide-react-native": "^1.17.0",
     "react": "19.1.0",
