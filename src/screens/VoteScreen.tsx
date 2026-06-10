@@ -17,7 +17,8 @@ export const VoteScreen: React.FC = () => {
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId, categoryName } = route.params;
   // قراءة spyGuessedCorrectly من route.params (مع افتراضي false)
-  const spyGuessedCorrectly = route.params.spyGuessedCorrectly ?? false;
+  // هذا يبقى "الجاسوس خمّن الكلمة فعلاً في SpyGuess" — منفصل عن winner
+  const spyGuessedWord = route.params.spyGuessedCorrectly ?? false;
 
   // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
   useFocusEffect(
@@ -86,13 +87,11 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // 🚨 إصلاح [12]: لو لا أحد صوّت على جاسوس (correctVoters فارغ)،
-      // الجواسيس ينجون من التصويت. النتائج يجب أن تعرض فوزهم.
-      // ندمج هذا مع قيمة spyGuessedCorrectly الأصلية (تخمين الجاسوس)
-      // لأن المنطق في ResultsScreen يعتمد على هذه القيمة لتحديد الفائز.
-      // الآن spyGuessedCorrectly يعني "الجواسيس فاز" (إما بالتخمين أو بالهروب).
-      const spyWon =
-        spyGuessedCorrectly || correctVoters.length === 0;
+      // الفائز النهائي:
+      // - الأبرياء فازوا: ≥1 لاعب بريء صوّت على جاسوس
+      // - الجواسيس فازوا: خمّنوا الكلمة، أو نجوا (لا أحد صوّت عليهم)
+      const winner: 'SPY' | 'PLAYERS' =
+        correctVoters.length > 0 ? 'PLAYERS' : 'SPY';
 
       navigation.navigate('Results', {
         players,
@@ -101,7 +100,10 @@ export const VoteScreen: React.FC = () => {
         categoryName: categoryName || '',
         categoryId,
         correctVoters,
-        spyGuessedCorrectly: spyWon,
+        // الجاسوس خمّن الكلمة فعلاً (للنقاط فقط) — من SpyGuess
+        spyGuessedWord,
+        // الفائز النهائي (للعرض: "فاز الأبرياء" أو "فاز الجاسوس")
+        winner,
       });
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);
