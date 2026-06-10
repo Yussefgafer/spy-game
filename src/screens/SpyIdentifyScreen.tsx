@@ -43,19 +43,17 @@ export const SpyIdentifyScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <FloatingView distance={4} duration={2000}>
-        <View style={styles.header}>
-          <PopInView delay={50}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>🕵️ من أنت؟</Text>
-          </PopInView>
-          <PopInView delay={100}>
-            <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-              اكتب اسمك لتبدأ مهمتك
-            </Text>
-          </PopInView>
-        </View>
-      </FloatingView>
+      {/* Header without animations */}
+      <View style={styles.header}>
+        <PopInView delay={50}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>🕵️ من أنت؟</Text>
+        </PopInView>
+        <PopInView delay={100}>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            اكتب اسمك لتبدأ مهمتك
+          </Text>
+        </PopInView>
+      </View>
 
       {/* Content */}
       <View style={styles.content}>

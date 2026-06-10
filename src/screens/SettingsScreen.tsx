@@ -32,14 +32,12 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <PopInView delay={50}>
-        <View style={styles.header}>
-          <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ الإعدادات</Text>
-          <View style={styles.backButton} />
-        </View>
-      </PopInView>
+      {/* Header without animations */}
+      <View style={styles.header}>
+        <BouncyBackButton onPress={() => navigation.goBack()} colors={colors} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>⚙️ الإعدادات</Text>
+        <View style={styles.backButton} />
+      </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Theme Section */}

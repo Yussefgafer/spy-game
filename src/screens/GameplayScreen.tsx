@@ -34,21 +34,19 @@ export const GameplayScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <FloatingView distance={4} duration={2000}>
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <PopInView delay={50}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>❓ مرحلة الأسئلة</Text>
-            </PopInView>
-          </View>
-          <PopInView delay={150}>
-            <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-              اسألوا بعضكم البعض لكشف الجاسوس
-            </Text>
+      {/* Header without animations */}
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <PopInView delay={50}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>❓ مرحلة الأسئلة</Text>
           </PopInView>
         </View>
-      </FloatingView>
+        <PopInView delay={150}>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            اسألوا بعضكم البعض لكشف الجاسوس
+          </Text>
+        </PopInView>
+      </View>
 
       {/* Players */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
