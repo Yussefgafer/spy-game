@@ -1,0 +1,40 @@
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview2": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview3": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "aab",
+        "enableMinification": true,
+        "enableProguardObfuscation": true,
+        "gradleCommand": "./gradlew :app:bundleRelease --project-cache-dir /tmp/gradle-cache"
+      },
+      "ios": {
+        "swiftcodegenEnabled": true
+      }
+    },
+    "release": {
+      "android": {
+        "buildType": "aab",
+        "enableMinification": true,
+        "enableProguardObfuscation": true
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
