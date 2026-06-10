@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,161 +7,272 @@ import {
   FlatList,
   Pressable,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { searchPlayers, addPlayer, Player } from '../database/sqlite';
+import { hapticSuccess } from '../utils/haptics';
+import { Plus } from 'lucide-react-native';
 
+/**
+ * AutoCompleteInput — حقل بحث مع اقتراحات تلقائية للاعبين المحفوظين.
+ *
+ * السلوك:
+ * - يبحث في قاعدة البيانات مع debounce (150ms) لتخفيف الضغط على DB.
+ * - يستثني اللاعبين المضافين بالفعل للمباراة الحالية من الاقتراحات.
+ * - زر الإضافة (+) يظهر داخل الحقل فقط عند التركيز ووجود نص صالح.
+ * - الإضافة تتم عبر Enter على الكيبورد أو النقر على الزر.
+ * - يلتزم بإلغاء الطلبات السابقة (cancellation flag) لتفادي race conditions.
+ *
+ * @example
+ * <AutoCompleteInput
+ *   onPlayerAdded={(player) => setPlayers(prev => [...prev, player.name])}
+ *   activePlayers={players}
+ *   disabled={players.length >= 10}
+ * />
+ */
 interface AutoCompleteInputProps {
-  onPlayerSelect: (player: Player) => void;
-  onPlayerAdd: (name: string) => void;
-  activePlayers: string[]; // قائمة بأسماء اللاعبين المضافين حالياً لتجنب تكرارهم
+  /** يُستدعى عند اختيار لاعب من الاقتراحات أو إضافة لاعب جديد */
+  onPlayerAdded: (player: Player) => void;
+  /** أسماء اللاعبين المضافين للمباراة (يُستثنون من الاقتراحات) */
+  activePlayers: string[];
+  /** نص placeholder للـ input */
+  placeholder?: string;
+  /** الحد الأقصى للاقتراحات المعروضة (افتراضي: 5) */
+  maxSuggestions?: number;
+  /** تعطيل الحقل (مثلاً عند بلوغ الحد الأقصى للاعبين) */
+  disabled?: boolean;
 }
 
+const DEBOUNCE_MS = 150;
+const INPUT_HEIGHT = 62;
+const BUTTON_SIZE = 38;
+const MAX_NAME_LENGTH = 30;
+const DROPDOWN_TOP_OFFSET = 8;
+const DROPDOWN_MAX_HEIGHT = 320;
+const BLUR_HIDE_DELAY_MS = 200;
+
 export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
-  onPlayerSelect,
-  onPlayerAdd,
+  onPlayerAdded,
   activePlayers,
+  placeholder = 'ابحث عن صديق أو اكتب اسم جديد...',
+  maxSuggestions = 5,
+  disabled = false,
 }) => {
   const { colors } = useTheme();
+  const inputRef = useRef<TextInput>(null);
+
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Player[]>([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // البحث في قاعدة البيانات عند تغير النص المدخل
+  /**
+   * Debounced search with cancellation flag.
+   * الـ flag يمنع تطبيق نتائج بحث قديمة بعد كتابة نص أحدث.
+   */
   useEffect(() => {
-    if (query.trim() === '') {
+    const trimmed = query.trim();
+
+    if (trimmed === '') {
       setSuggestions([]);
+      setIsLoading(false);
       return;
     }
 
-    const fetchSuggestions = () => {
-      const dbResults = searchPlayers(query);
-      // تصفية النتائج لاستبعاد اللاعبين المضافين بالفعل للمباراة الحالية
-      const filtered = dbResults.filter(
-        (player) => !activePlayers.includes(player.name)
-      );
-      setSuggestions(filtered);
+    setIsLoading(true);
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const results = await searchPlayers(trimmed);
+        if (cancelled) return;
+
+        const filtered = results
+          .filter((player) => !activePlayers.includes(player.name))
+          .slice(0, maxSuggestions);
+
+        setSuggestions(filtered);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }, DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
     };
+  }, [query, activePlayers, maxSuggestions]);
 
-    // تأخير بسيط (Debounce) لتقليل الضغط على قاعدة البيانات
-    const delayDebounce = setTimeout(() => {
-      fetchSuggestions();
-    }, 150);
-
-    return () => clearTimeout(delayDebounce);
-  }, [query, activePlayers]);
-
-  const handleSelectSuggestion = (player: Player) => {
-    onPlayerSelect(player);
-    setQuery('');
-    setSuggestions([]);
-    Keyboard.dismiss();
-  };
-
-  const handleAddNewPlayer = () => {
-    const trimmedName = query.trim();
-    if (trimmedName === '') return;
-
-    // إضافة اللاعب لقاعدة البيانات
-    const newPlayer = addPlayer(trimmedName);
-    if (newPlayer) {
-      onPlayerAdd(trimmedName);
-    } else {
-      // في حال كان موجوداً بالفعل ولم يظهر بالاقتراحات لسبب ما
-      onPlayerAdd(trimmedName);
+  /**
+   * عند تعطيل المكون، نُجبر فقدان التركيز لإخفاء الـ dropdown والزر.
+   */
+  useEffect(() => {
+    if (disabled) {
+      inputRef.current?.blur();
+      setIsFocused(false);
     }
+  }, [disabled]);
+
+  /**
+   * اختيار لاعب من الاقتراحات — اللاعب موجود في DB مسبقاً.
+   */
+  const handleSelectSuggestion = useCallback(
+    (player: Player) => {
+      onPlayerAdded(player);
+      setQuery('');
+      setSuggestions([]);
+      Keyboard.dismiss();
+      inputRef.current?.blur();
+      hapticSuccess();
+    },
+    [onPlayerAdded]
+  );
+
+  /**
+   * إضافة لاعب جديد للـ DB ثم إبلاغ الأب.
+   * - يتجاهل الأسماء الفارغة أو المكررة.
+   * - addPlayer متزامن ويعيد null عند الفشل.
+   */
+  const handleAddNew = useCallback(() => {
+    const trimmed = query.trim();
+    if (!trimmed || activePlayers.includes(trimmed)) return;
+
+    const newPlayer = addPlayer(trimmed);
+    if (!newPlayer) return;
+
+    onPlayerAdded(newPlayer);
     setQuery('');
     setSuggestions([]);
     Keyboard.dismiss();
-  };
+    inputRef.current?.blur();
+    hapticSuccess();
+  }, [query, activePlayers, onPlayerAdded]);
 
-  // التحقق مما إذا كان الاسم المكتوب جديداً تماماً وغير مضاف للمباراة
-  const isNewName =
-    query.trim() !== '' &&
-    !suggestions.some(
-      (p) => p.name.toLowerCase() === query.trim().toLowerCase()
-    ) &&
-    !activePlayers.includes(query.trim());
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  /**
+   * تأخير إخفاء الـ dropdown للسماح بتسجيل النقر على اقتراح قبل الاختفاء.
+   */
+  const handleBlur = useCallback(() => {
+    setTimeout(() => setIsFocused(false), BLUR_HIDE_DELAY_MS);
+  }, []);
+
+  // ---- Derived state ----
+  const trimmed = query.trim();
+  const isDuplicate = activePlayers.includes(trimmed);
+  const canAdd = isFocused && trimmed.length > 0 && !isDuplicate;
+  const showDropdown = isFocused && suggestions.length > 0;
 
   return (
     <View style={styles.container}>
-      {/* حقل الإدخال */}
-      <TextInput
+      {/* Input field with integrated Add button (visible only on focus) */}
+      <View
         style={[
-          styles.input,
+          styles.inputContainer,
           {
-            color: colors.text,
             backgroundColor: colors.card,
             borderColor: isFocused ? colors.accent : colors.border,
+            opacity: disabled ? 0.5 : 1,
           },
         ]}
-        value={query}
-        onChangeText={setQuery}
-        placeholder="ابحث عن صديق أو اكتب اسم جديد..."
-        placeholderTextColor={colors.textMuted}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setTimeout(() => setIsFocused(false), 200)} // تأخير بسيط للسماح بلمس الاقتراحات
-        textAlign="right"
-      />
+      >
+        <TextInput
+          ref={inputRef}
+          style={[styles.input, { color: colors.text }]}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onSubmitEditing={handleAddNew}
+          textAlign="right"
+          editable={!disabled}
+          returnKeyType="done"
+          autoCorrect={false}
+          autoCapitalize="words"
+          maxLength={MAX_NAME_LENGTH}
+        />
 
-      {/* قائمة الاقتراحات المنسدلة */}
-      {isFocused && (query.trim() !== '' || suggestions.length > 0) && (
+        {/* Loading state */}
+        {isLoading && (
+          <View style={styles.loader}>
+            <ActivityIndicator size="small" color={colors.accent} />
+          </View>
+        )}
+
+        {/* Add button — only when focused and input has a valid new name */}
+        {!isLoading && canAdd && (
+          <Pressable
+            onPress={handleAddNew}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`إضافة ${trimmed}`}
+            accessibilityHint="يضيف هذا الاسم كلاعب جديد في المباراة"
+            style={({ pressed }) => [
+              styles.addButton,
+              {
+                backgroundColor: colors.accent,
+                transform: [{ scale: pressed ? 0.9 : 1 }],
+              },
+            ]}
+          >
+            <Plus size={20} color="#000" strokeWidth={2.5} />
+          </Pressable>
+        )}
+      </View>
+
+      {/* Dropdown — existing player matches from DB */}
+      {showDropdown && (
         <View
-          style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[
+            styles.dropdown,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
         >
-          {suggestions.length > 0 && (
-            <FlatList
-              data={suggestions}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => handleSelectSuggestion(item)}
-                  style={({ pressed }) => [
-                    styles.suggestionItem,
-                    {
-                      borderBottomColor: colors.border,
-                      backgroundColor: pressed
-                        ? colors.accentMuted
-                        : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.suggestionText, { color: colors.text }]}>
+          <FlatList
+            data={suggestions}
+            keyExtractor={(item) => `player-${item.id}`}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => handleSelectSuggestion(item)}
+                style={({ pressed }) => [
+                  styles.suggestionItem,
+                  {
+                    borderBottomColor: colors.border,
+                    backgroundColor: pressed
+                      ? colors.accentMuted
+                      : 'transparent',
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`اختيار ${item.name}`}
+              >
+                <View style={styles.suggestionInfo}>
+                  <Text style={[styles.suggestionName, { color: colors.text }]}>
                     {item.name}
                   </Text>
                   <Text
-                    style={[
-                      styles.suggestionPoints,
-                      { color: colors.textMuted },
-                    ]}
+                    style={[styles.suggestionMeta, { color: colors.textMuted }]}
                   >
-                    {item.total_points} نقطة
+                    {item.matches_played > 0
+                      ? `${item.matches_played} مباراة • ${item.total_points} نقطة`
+                      : 'لم يلعب بعد'}
                   </Text>
-                </Pressable>
-              )}
-              scrollEnabled={false}
-              keyboardShouldPersistTaps="handled"
-            />
-          )}
-
-          {/* زر إضافة لاعب جديد */}
-          {isNewName && (
-            <Pressable
-              onPress={handleAddNewPlayer}
-              style={({ pressed }) => [
-                styles.addNewButton,
-                {
-                  backgroundColor: pressed
-                    ? colors.accentMuted
-                    : 'transparent',
-                },
-              ]}
-            >
-              <Text style={[styles.addNewText, { color: colors.accent }]}>
-                ➕ إضافة لاعب جديد باسم "{query.trim()}"
-              </Text>
-            </Pressable>
-          )}
+                </View>
+              </Pressable>
+            )}
+            scrollEnabled={suggestions.length > 4}
+            keyboardShouldPersistTaps="handled"
+          />
         </View>
       )}
     </View>
@@ -171,55 +282,75 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    zIndex: 10,
     position: 'relative',
+    zIndex: 10,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
     width: '100%',
-    height: 54,
+    height: INPUT_HEIGHT,
     borderRadius: 16,
     borderWidth: 1.5,
     paddingHorizontal: 16,
-    fontSize: 15,
-    fontFamily: 'System',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'right',
+    paddingVertical: 0,
+  },
+  addButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  loader: {
+    marginLeft: 8,
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dropdown: {
     position: 'absolute',
-    top: 60,
+    top: INPUT_HEIGHT + DROPDOWN_TOP_OFFSET,
     left: 0,
     right: 0,
-    borderRadius: 18,
-    borderWidth: 1.5,
+    borderRadius: 14,
+    borderWidth: 1,
     overflow: 'hidden',
     zIndex: 20,
-    elevation: 5,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    maxHeight: DROPDOWN_MAX_HEIGHT,
   },
   suggestionItem: {
     flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  suggestionText: {
+  suggestionInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  suggestionName: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'System',
+    textAlign: 'right',
   },
-  suggestionPoints: {
-    fontSize: 13,
-    fontFamily: 'System',
-  },
-  addNewButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addNewText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'System',
+  suggestionMeta: {
+    fontSize: 12,
+    marginTop: 2,
+    textAlign: 'right',
   },
 });
