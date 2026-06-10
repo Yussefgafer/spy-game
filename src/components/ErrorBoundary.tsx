@@ -1,5 +1,38 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native';
+
+// Functional component للشاشة — يستخدم ثيم النظام
+const ErrorScreen: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => {
+  const scheme = useColorScheme();
+  const isDark = scheme !== 'light';
+
+  const bg = isDark ? '#121212' : '#F5F5F5';
+  const card = isDark ? '#1E1E1E' : '#FFFFFF';
+  const textPrimary = isDark ? '#FFFFFF' : '#121212';
+  const textMuted = isDark ? '#A0A0A0' : '#707070';
+  const border = isDark ? '#2C2C2C' : '#E0E0E0';
+  const accent = isDark ? '#00E676' : '#4CAF50';
+
+  return (
+    <View style={[styles.container, { backgroundColor: bg }]}>
+      <View style={[styles.card, { backgroundColor: card, borderColor: border }]}>
+        <Text style={styles.icon}>⚠️</Text>
+        <Text style={[styles.title, { color: textPrimary }]}>حدث خطأ غير متوقع</Text>
+        <Text style={[styles.message, { color: textMuted }]}>
+          {message || 'خطأ غير معروف'}
+        </Text>
+        <Pressable
+          style={[styles.button, { backgroundColor: accent }]}
+          onPress={onRetry}
+          accessibilityLabel="إعادة المحاولة"
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>إعادة المحاولة</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
 
 interface Props {
   children: ReactNode;
@@ -35,18 +68,12 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>حدث خطأ غير متوقع</Text>
-          <Text style={styles.message}>
-            {this.state.error?.message || 'خطأ غير معروف'}
-          </Text>
-          <Pressable style={styles.button} onPress={this.handleRestart}>
-            <Text style={styles.buttonText}>إعادة المحاولة</Text>
-          </Pressable>
-        </View>
+        <ErrorScreen
+          message={this.state.error?.message || ''}
+          onRetry={this.handleRestart}
+        />
       );
     }
-
     return this.props.children;
   }
 }
@@ -56,32 +83,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#1a1a1a',
+    padding: 24,
+  },
+  card: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    padding: 28,
+    alignItems: 'center',
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 16,
+    marginBottom: 10,
     textAlign: 'center',
   },
   message: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 13,
     marginBottom: 24,
     textAlign: 'center',
+    lineHeight: 20,
   },
   button: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 12,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 

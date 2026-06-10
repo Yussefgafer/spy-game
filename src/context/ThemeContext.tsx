@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme } from 'react-native';
 
 export type ThemeType = 'DARK' | 'LIGHT' | 'NEON';
 
@@ -57,9 +58,12 @@ const THEMES: Record<ThemeType, ThemeColors> = {
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeType>('DARK');
+  const systemScheme = useColorScheme();
+  const [theme, setThemeState] = useState<ThemeType>(
+    systemScheme === 'light' ? 'LIGHT' : 'DARK'
+  );
 
-  // تحميل الثيم المفضل عند الإقلاع
+  // تحميل الثيم المحفوظ — إن لم يوجد نستخدم ثيم النظام
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -67,6 +71,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (savedTheme && (savedTheme === 'DARK' || savedTheme === 'LIGHT' || savedTheme === 'NEON')) {
           setThemeState(savedTheme as ThemeType);
         }
+        // لا saved theme → ثيم النظام يبقى مفعلاً
       } catch (error) {
         console.error('خطأ أثناء تحميل الثيم:', error);
       }

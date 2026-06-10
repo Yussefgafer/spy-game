@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Check, ArrowLeft, MinusCircle, Vote } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
@@ -16,6 +16,29 @@ export const VoteScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId, categoryName } = route.params;
+
+  // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          'مغادرة التصويت',
+          'هل تريد إلغاء جولة التصويت والعودة للقائمة الرئيسية؟',
+          [
+            { text: 'تراجع', style: 'cancel' },
+            {
+              text: 'خروج',
+              style: 'destructive',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+        return true;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [navigation])
+  );
 
   // All players vote (including spies can vote to confuse)
   const [currentVoterIndex, setCurrentVoterIndex] = useState(0);
@@ -277,6 +300,9 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel={`صوّت على ${player}`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
         style={[
           styles.playerOption,
           {
@@ -321,6 +347,9 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel="أفضل عدم التصويت"
+        accessibilityRole="radio"
+        accessibilityState={{ selected: skipped }}
         style={[
           styles.skipOption,
           {
@@ -379,6 +408,9 @@ const BouncyNextButton: React.FC<BouncyNextButtonProps> = ({ onPress, disabled, 
         onPressOut={handlePressOut}
         onPress={onPress}
         disabled={disabled}
+        accessibilityLabel={isLastVoter ? 'الانتقال لإظهار النتائج' : 'الانتقال للناخب التالي'}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={[
           styles.nextButton,
           {
@@ -407,101 +439,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
   },
   headerSubtitle: {
-    fontSize: 14,
-    marginTop: 6,
+    fontSize: 13,
+    marginTop: 8,
+    lineHeight: 18,
   },
   progressContainer: {
     flexDirection: 'row-reverse',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
+    gap: 12,
+    paddingVertical: 20,
   },
   progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
   voterSection: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   voterCard: {
     alignItems: 'center',
-    padding: 24,
-    borderRadius: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    borderRadius: 18,
     borderWidth: 1.5,
   },
   voterName: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginTop: 14,
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 16,
+    lineHeight: 26,
   },
   voterInstruction: {
-    fontSize: 15,
-    marginTop: 8,
+    fontSize: 14,
+    marginTop: 10,
+    lineHeight: 20,
   },
   voterCounter: {
-    fontSize: 13,
-    marginTop: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    marginTop: 12,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   sectionTitle: {
-    fontSize: 15,
-    marginBottom: 12,
+    fontSize: 14,
+    marginBottom: 14,
     textAlign: 'right',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   playerOption: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1.5,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   playerOptionText: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
   },
   skipOption: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1.5,
-    marginTop: 16,
-    gap: 10,
+    marginTop: 12,
+    gap: 12,
   },
   skipText: {
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: '600',
   },
   footer: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   nextButton: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 58,
+    height: 60,
     borderRadius: 16,
     borderWidth: 1.5,
-    gap: 10,
+    gap: 12,
   },
   nextButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });
