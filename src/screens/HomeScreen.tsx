@@ -327,6 +327,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingTop: 28,
     borderTopWidth: 1.5,
+    borderTopColor: colors.border,
   },
   settingsButton: {
     flexDirection: 'row-reverse',
