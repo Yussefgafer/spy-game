@@ -53,10 +53,16 @@ export type RootStackParamList = {
     categoryId: string;
     correctVoters: string[];
     /**
-     * هل خمّن الجاسوس الكلمة السرية بشكل صحيح؟
-     * false الافتراضي (الجاسوس لم يخمن أو خمّن خطأ).
+     * هل خمّن الجاسوس الكلمة السرية فعلاً (دخل مرحلة SpyGuess وأجاب صح)؟
+     * منفصل عن winner — هذا يتحكم فقط في توزيع النقاط.
      */
-    spyGuessedCorrectly: boolean;
+    spyGuessedWord: boolean;
+    /**
+     * الفائز النهائي: الأبرياء (كشفوا الجاسوس) أم الجواسيس (نجوا أو خمّنوا).
+     * - 'SPY': الجواسيس فازوا (إما بالتخمين، أو بالهروب من التصويت)
+     * - 'PLAYERS': الأبرياء فازوا (صوّتوا على جاسوس ≥1)
+     */
+    winner: 'SPY' | 'PLAYERS';
   };
   Leaderboard: undefined;
   History: undefined;
