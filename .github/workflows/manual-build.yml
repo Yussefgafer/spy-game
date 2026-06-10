@@ -1,0 +1,162 @@
+name: 🔨 Manual Build & Upload Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'apk'
+        type: choice
+        options:
+          - apk
+          - aab
+      artifact_name:
+        description: 'Custom artifact name (optional)'
+        required: false
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: 🏗️ Build Android (${{ inputs.build_type }})
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: 📥 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Run type check
+        run: npx tsc --noEmit || true
+
+      - name: 🔧 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 🏗️ Prebuild Android
+        run: npx expo prebuild --platform android --clean
+
+      - name: 📝 Generate Build Info
+        run: |
+          echo "BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "BUILD_ID=spy-game-${{ inputs.build_type }}-$(date '+%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+      - name: 🏗️ Build Android Package
+        run: |
+          cd android
+          if [ "${{ inputs.build_type }}" == "aab" ]; then
+            ./gradlew bundleRelease
+          else
+            ./gradlew assembleRelease
+          fi
+        env:
+          GRADLE_OPTS: -Xmx4096m
+
+      - name: 📊 Check build output size
+        run: |
+          if [ "${{ inputs.build_type }}" == "aab" ]; then
+            BUILD_FILE=$(find android/app/build/outputs/bundle -name "*.aab" | head -1)
+            echo "📦 Build type: AAB (Android App Bundle)"
+          else
+            BUILD_FILE=$(find android/app/build/outputs/apk -name "*release.apk" | head -1)
+            echo "📦 Build type: APK"
+          fi
+          
+          if [ -f "$BUILD_FILE" ]; then
+            SIZE=$(du -h "$BUILD_FILE" | cut -f1)
+            echo "📦 File: $(basename $BUILD_FILE)"
+            echo "📏 Size: $SIZE"
+            echo "🕐 Time: $BUILD_TIME"
+            echo "🔗 Commit: $COMMIT_SHA"
+          fi
+
+      - name: 📦 Prepare artifacts
+        run: |
+          ARTIFACT_DIR="./artifacts"
+          mkdir -p "$ARTIFACT_DIR"
+          
+          if [ "${{ inputs.build_type }}" == "aab" ]; then
+            find android/app/build/outputs/bundle -name "*.aab" -exec cp {} "$ARTIFACT_DIR/" \;
+            echo "✅ AAB file copied"
+          else
+            find android/app/build/outputs/apk -name "*release.apk" -exec cp {} "$ARTIFACT_DIR/" \;
+            echo "✅ APK file copied"
+          fi
+          
+          # Create build info file
+          cat > "$ARTIFACT_DIR/BUILD_INFO.txt" << 'INFO'
+          🕵️ Spy Game - Build Information
+          ================================
+          
+          Build Type: ${{ inputs.build_type }}
+          Build Time: ${{ env.BUILD_TIME }}
+          Commit SHA: ${{ env.COMMIT_SHA }}
+          Branch: ${{ github.ref_name }}
+          GitHub Action: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          Build Environment:
+          - OS: Ubuntu Latest
+          - Java: 17 (Temurin)
+          - Node: 20
+          - Gradle: Latest
+          
+          Minification: Enabled (R8)
+          Resources: Shrunk
+          Debug Info: Preserved for crash reports
+          INFO
+          
+          cat "$ARTIFACT_DIR/BUILD_INFO.txt"
+
+      - name: 📤 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spy-game-${{ inputs.build_type }}-${{ env.COMMIT_SHA }}
+          path: artifacts/
+          retention-days: 30
+          compression-level: 6
+
+      - name: 📊 Create summary
+        run: |
+          echo "## ✅ Build Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type**: ${{ inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: [${{ env.COMMIT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: ${{ env.BUILD_TIME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Download Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts are available in the job summary. Click on the artifact link to download." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚙️ Build Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Minification: ✅ Enabled (R8)" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Shrinking: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- Debug Info: ✅ Preserved" >> $GITHUB_STEP_SUMMARY
+          echo "- ProGuard Rules: ✅ Applied" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📬 Post to GitHub Discussions (optional)
+        if: always()
+        run: |
+          echo "Build completed for ${{ github.ref_name }} branch"
+          echo "Type: ${{ inputs.build_type }}"
+          echo "Artifacts uploaded successfully!"

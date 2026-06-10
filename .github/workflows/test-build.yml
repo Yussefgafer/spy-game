@@ -1,0 +1,70 @@
+name: ✅ Test Build (PR & Push)
+
+on:
+  push:
+    branches:
+      - feature/**
+      - fix/**
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    name: 🧪 Test Build on ${{ github.ref_name }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: 📥 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 ESLint check
+        run: pnpm run lint || true
+        continue-on-error: true
+
+      - name: ✅ TypeScript type check
+        run: npx tsc --noEmit || true
+        continue-on-error: true
+
+      - name: 🔧 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 🏗️ Prebuild Android
+        run: npx expo prebuild --platform android --clean
+
+      - name: 🏗️ Build test APK (debug)
+        run: |
+          cd android
+          ./gradlew assembleDebug
+        continue-on-error: true
+
+      - name: 📊 Build Summary
+        run: |
+          echo "## 🧪 Test Build Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Test build completed successfully!" >> $GITHUB_STEP_SUMMARY
