@@ -2,16 +2,66 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
     branches:
       - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
+  # 1. التحقق من الـ Git Tags ومقارنتها
+  check-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      local_tag: ${{ steps.compare.outputs.local_tag }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # مهم جداً لجلب كل الـ Tags من السيرفر
+
+      - name: 🔍 Compare Git Tags
+        id: compare
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. جلب أحدث Tag محلي في الـ Git
+          LATEST_LOCAL_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest local Git Tag: $LATEST_LOCAL_TAG"
+          
+          # 2. جلب آخر Release Tag على GitHub
+          LATEST_RELEASE_TAG=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null || echo "v0.0.0")
+          echo "Latest GitHub Release Tag: $LATEST_RELEASE_TAG"
+          
+          # تنظيف الأسماء من حرف v لتسهيل المقارنة الرقمية
+          LOCAL_VERSION=${LATEST_LOCAL_TAG#v}
+          RELEASE_VERSION=${LATEST_RELEASE_TAG#v}
+          
+          # 3. مقارنة الإصدارات بدقة باستخدام Node.js
+          SHOULD_BUILD=$(node -e "
+            const local = '$LOCAL_VERSION'.split('.').map(Number);
+            const release = '$RELEASE_VERSION'.split('.').map(Number);
+            let shouldBuild = false;
+            for (let i = 0; i < Math.max(local.length, release.length); i++) {
+              const l = local[i] || 0;
+              const r = release[i] || 0;
+              if (l > r) { shouldBuild = true; break; }
+              if (l < r) { break; }
+            }
+            console.log(shouldBuild);
+          ")
+          
+          echo "Should build: $SHOULD_BUILD"
+          echo "should_build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+          echo "local_tag=$LATEST_LOCAL_TAG" >> $GITHUB_OUTPUT
+
+  # 2. وظيفة الفحص والـ Lint (تعمل فقط إذا كان هناك Tag محلي أحدث)
   lint-and-check:
+    needs: check-tags
+    if: needs.check-tags.outputs.should_build == 'true' && needs.check-tags.outputs.local_tag != 'v0.0.0'
     runs-on: ubuntu-latest
     name: 🔍 Lint & Type Check
-
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -26,12 +76,6 @@ jobs:
         with:
           version: 9
 
-      - name: 💾 Restore pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -41,12 +85,13 @@ jobs:
       - name: ✅ TypeScript type check
         run: npx tsc --noEmit || true
 
+  # 3. وظيفة البناء والـ Release
   build-android:
+    needs: [check-tags, lint-and-check]
+    if: needs.check-tags.outputs.should_build == 'true' && needs.check-tags.outputs.local_tag != 'v0.0.0'
     runs-on: ubuntu-latest
-    needs: lint-and-check
     permissions:
       contents: write
-
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -67,12 +112,6 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: 💾 Setup pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -96,9 +135,7 @@ jobs:
       - name: 🏗️ Build Release APK
         run: |
           cd android
-          echo "Starting Gradle build..."
           if [ -f app/release.keystore ]; then
-            echo "✅ Keystore found, building signed APK"
             ./gradlew assembleRelease \
               -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
               -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
@@ -106,87 +143,35 @@ jobs:
               -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }} \
               -Dorg.gradle.jvmargs="-Xmx4096m"
           else
-            echo "⚠️ No keystore, building unsigned APK"
             ./gradlew assembleRelease -Dorg.gradle.jvmargs="-Xmx4096m"
-          fi
-          echo "✅ Build completed"
-
-      - name: 📂 List APK files
-        run: |
-          echo "=== Looking for APK files ==="
-          find android/app/build/outputs -name "*.apk" -type f || echo "❌ No APK found!"
-          ls -lh android/app/build/outputs/apk/release/ || echo "Directory not found"
-
-      - name: 📊 Check APK size
-        run: |
-          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" -type f | head -1)
-          if [ -f "$APK_FILE" ]; then
-            SIZE=$(du -h "$APK_FILE" | cut -f1)
-            echo "✅ APK File: $(basename $APK_FILE)"
-            echo "📏 APK Size: $SIZE"
-          else
-            echo "❌ APK file not found!"
-            exit 1
           fi
 
       - name: 📝 Rename APK
         run: |
           cd android/app/build/outputs/apk/release/
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Version: $VERSION"
+          # استخدام الـ Tag المحلي الذي تم التحقق منه
+          TAG="${{ needs.check-tags.outputs.local_tag }}"
+          VERSION="${TAG#v}"
           
           if [ -f "app-release.apk" ]; then
-            echo "Found: app-release.apk"
             mv app-release.apk spy-game-${VERSION}.apk
           elif [ -f "app-universal-release.apk" ]; then
-            echo "Found: app-universal-release.apk"
             mv app-universal-release.apk spy-game-${VERSION}.apk
           else
-            echo "Listing available files:"
-            ls -la
             echo "❌ No APK file found for renaming!"
             exit 1
           fi
-          
-          ls -lh spy-game-*.apk
 
-      - name: 📁 Check workspace before release
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Looking for APK files ==="
-          find . -name "spy-game-*.apk" -type f || echo "No renamed APK found"
-          find . -name "*.apk" -type f 2>/dev/null | head -10
-
-      - name: 🚀 Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: 🕵️ Spy Game ${{ github.ref_name }}
-          body: |
-            ## 🕵️ Spy Game ${{ github.ref_name }}
-            
-            ### 📱 التحميل
-            - قم بتحميل ملف APK وتثبيته على جهازك الأندرويد
-            
-            ### 📝 متطلبات التثبيت
-            - Android 5.0 (API 21) وما فوق
-            - قد تحتاج للسماح بالتثبيت من مصادر غير معروفة
-            
-            ### ✨ المميزات
-            - لعبة حفلات ممتعة بالعربية
-            - 11 فئة تصنيف متنوعة
-            - 3 أنماط ألوان (فاتح، داكن، نيون)
-            - سجل الأبطال وتاريخ المباريات
-            - رسوم متحركة سلسة وتصميم عصري
-            
-            ### 🔄 التحديثات الأخيرة
-            - إزالة المؤقت من مرحلة الأسئلة
-            - شاشة جديدة لإدخال اسم الجاسوس
-            - 9 تصنيفات جديدة
-            - تحسينات الواجهة (UX/UI)
-          files: |
-            android/app/build/outputs/apk/release/spy-game-*.apk
-          draft: false
-          prerelease: false
+      - name: 🚀 Create Release and Upload APK
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.check-tags.outputs.local_tag }}"
+          VERSION="${TAG#v}"
+          
+          # استخدام GitHub CLI لإنشاء الـ Release ورفع الملف تلقائياً
+          gh release create "$TAG" \
+            --target master \
+            --title "🕵️ Spy Game $TAG" \
+            --notes "تحديث تلقائي جديد للإصدار $TAG" \
+            android/app/build/outputs/apk/release/spy-game-${VERSION}.apk
