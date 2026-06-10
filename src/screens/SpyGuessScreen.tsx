@@ -19,7 +19,7 @@ export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SpyGuessRouteProp>();
-  const { categoryId, correctWord, players, spies, correctVoters } = route.params;
+  const { categoryId, correctWord, players, spies, categoryName } = route.params;
 
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
@@ -75,15 +75,13 @@ export const SpyGuessScreen: React.FC = () => {
       hapticError();
     }
 
-    // Navigate to results with all data
-    navigation.navigate('Results', {
+    // Navigate to Vote with all data
+    navigation.navigate('Vote', {
       players,
       spies,
       secretWord: correctWord,
-      categoryName: CATEGORIES.find((c) => c.id === categoryId)?.name || '',
+      categoryName,
       categoryId,
-      correctVoters,
-      spyGuessedCorrectly: isCorrect,
     });
   };
 
