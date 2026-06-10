@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Timer, AlertTriangle, ArrowLeft, Zap, Eye, Sparkles } from 'lucide-react-native';
+import { Timer, AlertTriangle, ArrowLeft, Zap, Sparkles } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
@@ -113,17 +113,6 @@ export const SpyGuessScreen: React.FC = () => {
           formatTime={formatTime}
           colors={colors}
         />
-      </PopInView>
-
-      {/* Spy Info */}
-      <PopInView delay={150}>
-        <View style={[styles.spyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.spyIconContainer, { backgroundColor: `${colors.danger}15` }]}>
-            <Eye size={24} color={colors.danger} />
-          </View>
-          <Text style={[styles.spyLabel, { color: colors.textMuted }]}>الجاسوس:</Text>
-          <Text style={[styles.spyName, { color: colors.danger }]}>{spies.join('، ')}</Text>
-        </View>
       </PopInView>
 
       {/* Word Options */}
@@ -369,30 +358,6 @@ const styles = StyleSheet.create({
   urgentText: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: 'bold',
-  },
-  spyCard: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    gap: 12,
-  },
-  spyIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spyLabel: {
-    fontSize: 13,
-  },
-  spyName: {
-    fontSize: 20,
     fontWeight: 'bold',
   },
   scrollView: {
