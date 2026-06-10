@@ -132,7 +132,13 @@ jobs:
       - name: 📝 Rename APK
         run: |
           cd android/app/build/outputs/apk/release/
-          VERSION=${GITHUB_REF#refs/tags/v}
+          # استخدام github.ref_name للحصول على الاسم القصير (مثل master أو v1.0.0)
+          VERSION="${{ github.ref_name }}"
+          # إزالة حرف v من البداية إذا كان موجوداً (مثل v1.0.0 تصبح 1.0.0)
+          VERSION="${VERSION#v}"
+          # استبدال أي شرطة مائلة بشرطة عادية لتجنب مشاكل المجلدات (مثال: feature/test تصبح feature-test)
+          VERSION="${VERSION//\//-}"
+          
           echo "Version: $VERSION"
           
           if [ -f "app-release.apk" ]; then
