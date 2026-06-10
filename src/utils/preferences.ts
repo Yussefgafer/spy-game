@@ -55,30 +55,3 @@ export const loadPreferences = async (): Promise<SavedPreferences | null> => {
     return null;
   }
 };
-
-/**
- * حفظ آخر قائمة لاعبين
- */
-export const saveLastPlayers = async (players: string[]): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(KEYS.LAST_PLAYERS, JSON.stringify(players));
-  } catch (error) {
-    console.error('خطأ أثناء حفظ قائمة اللاعبين:', error);
-  }
-};
-
-/**
- * تحميل آخر قائمة لاعبين
- */
-export const loadLastPlayers = async (): Promise<string[]> => {
-  try {
-    const playersStr = await AsyncStorage.getItem(KEYS.LAST_PLAYERS);
-    if (playersStr) {
-      return JSON.parse(playersStr);
-    }
-    return [];
-  } catch (error) {
-    console.error('خطأ أثناء تحميل قائمة اللاعبين:', error);
-    return [];
-  }
-};
