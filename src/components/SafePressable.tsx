@@ -1,12 +1,22 @@
-import React, { useRef, useState } from 'react';
-import { Pressable, PressableProps, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Pressable, PressableProps } from 'react-native';
 import { hapticLight } from '../utils/haptics';
 
 interface SafePressableProps extends PressableProps {
   children: React.ReactNode;
-  threshold?: number; // بكسل — المسافة القصوى قبل إلغاء الضغط
+  /** بكسل — المسافة القصوى قبل إلغاء الضغط */
+  threshold?: number;
 }
 
+/**
+ * Pressable آمن: يلغي onPress إذا تحرك الإصبع أكثر من threshold بكسل.
+ *
+ * الإصلاح المهم: في React Native، ترتيب الاستدعاءات عند رفع الإصبع هو:
+ *   1) onPressOut
+ *   2) onPress
+ * لذا يجب فحص المسافة داخل onPress (وليس onPressOut) قبل استدعاء onPress الحقيقي.
+ * عدم القيام بذلك يجعل onPress لا يُستدعى أبداً (الـ ref يكون null بسبب تنظيف onPressOut).
+ */
 export const SafePressable: React.FC<SafePressableProps> = ({
   children,
   threshold = 50,
@@ -15,50 +25,32 @@ export const SafePressable: React.FC<SafePressableProps> = ({
   onPressOut,
   ...props
 }) => {
-  const [isPressed, setIsPressed] = useState(false);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const handlePressIn: PressableProps['onPressIn'] = (e) => {
-    setIsPressed(true);
     startPosRef.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
     hapticLight();
     onPressIn?.(e);
   };
 
   const handlePressOut: PressableProps['onPressOut'] = (e) => {
-    if (!isPressed || !startPosRef.current) {
-      setIsPressed(false);
-      onPressOut?.(e);
-      return;
-    }
-
-    const distance = Math.sqrt(
-      Math.pow(e.nativeEvent.pageX - startPosRef.current.x, 2) +
-      Math.pow(e.nativeEvent.pageY - startPosRef.current.y, 2)
-    );
-
-    // إذا تحركت أكثر من threshold، لا تستدعي onPress
-    if (distance > threshold) {
-      setIsPressed(false);
-      onPressOut?.(e);
-      startPosRef.current = null;
-      return;
-    }
-
-    setIsPressed(false);
     onPressOut?.(e);
-    startPosRef.current = null;
   };
 
   const handlePress: PressableProps['onPress'] = (e) => {
-    if (!isPressed || !startPosRef.current) return;
+    if (!startPosRef.current) {
+      return;
+    }
 
     const distance = Math.sqrt(
       Math.pow(e.nativeEvent.pageX - startPosRef.current.x, 2) +
       Math.pow(e.nativeEvent.pageY - startPosRef.current.y, 2)
     );
 
-    // فقط استدعي onPress إذا كانت المسافة داخل threshold
+    // تنظيف الـ ref أولاً حتى لو أُلغي الـ press
+    startPosRef.current = null;
+
+    // استدعِ onPress فقط إذا تحرك الإصبع داخل threshold
     if (distance <= threshold) {
       onPress?.(e);
     }

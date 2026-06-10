@@ -1,0 +1,46 @@
+name: Code Quality Check
+
+on:
+  push:
+    branches:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        continue-on-error: true
+        run: |
+          echo "=== ESLint Report ===" > eslint-report.txt
+          npm run lint >> eslint-report.txt 2>&1 || true
+
+      - name: Run Fallow Code Intelligence
+        continue-on-error: true
+        run: |
+          echo "=== Fallow Report ===" > fallow-report.txt
+          npx fallow >> fallow-report.txt 2>&1 || true
+
+      - name: Upload Quality Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-reports
+          path: |
+            eslint-report.txt
+            fallow-report.txt
+          retention-days: 7

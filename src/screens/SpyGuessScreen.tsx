@@ -66,22 +66,24 @@ export const SpyGuessScreen: React.FC = () => {
 
   const handleGuess = (word: string, _isTimeout = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     const isCorrect = word === correctWord;
-    
+
     if (isCorrect) {
       hapticSuccess();
     } else {
       hapticError();
     }
 
-    // Navigate to Vote with all data
+    // تمرير نتيجة تخمين الجاسوس إلى شاشة Vote
+    // (true لو خمّن صح، false لو خطأ أو انتهى الوقت)
     navigation.navigate('Vote', {
       players,
       spies,
       secretWord: correctWord,
       categoryName,
       categoryId,
+      spyGuessedCorrectly: isCorrect,
     });
   };
 

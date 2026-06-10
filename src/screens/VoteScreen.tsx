@@ -16,6 +16,9 @@ export const VoteScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId, categoryName } = route.params;
+  // قراءة spyGuessedCorrectly من route.params (مع افتراضي false)
+  // هذا يبقى "الجاسوس خمّن الكلمة فعلاً في SpyGuess" — منفصل عن winner
+  const spyGuessedWord = route.params.spyGuessedCorrectly ?? false;
 
   // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
   useFocusEffect(
@@ -84,7 +87,12 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // Navigate to Results with all data
+      // الفائز النهائي:
+      // - الأبرياء فازوا: ≥1 لاعب بريء صوّت على جاسوس
+      // - الجواسيس فازوا: خمّنوا الكلمة، أو نجوا (لا أحد صوّت عليهم)
+      const winner: 'SPY' | 'PLAYERS' =
+        correctVoters.length > 0 ? 'PLAYERS' : 'SPY';
+
       navigation.navigate('Results', {
         players,
         spies,
@@ -92,7 +100,10 @@ export const VoteScreen: React.FC = () => {
         categoryName: categoryName || '',
         categoryId,
         correctVoters,
-        spyGuessedCorrectly: false, // سيتم تحديده في ResultsScreen
+        // الجاسوس خمّن الكلمة فعلاً (للنقاط فقط) — من SpyGuess
+        spyGuessedWord,
+        // الفائز النهائي (للعرض: "فاز الأبرياء" أو "فاز الجاسوس")
+        winner,
       });
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);
@@ -142,7 +153,7 @@ export const VoteScreen: React.FC = () => {
       {/* Voting Options */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>المشتبه بهم:</Text>
-        
+
         {players
           .filter((p) => p !== currentVoter)
           .map((player, index) => (

@@ -9,16 +9,6 @@ export const hapticLight = () => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 };
 
-// Medium impact - for selections, toggles
-export const hapticMedium = () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-};
-
-// Heavy impact - for important actions like delete, confirm
-export const hapticHeavy = () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-};
-
 // Success notification - for completed actions
 export const hapticSuccess = () => {
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -32,9 +22,4 @@ export const hapticWarning = () => {
 // Error notification - for failed actions
 export const hapticError = () => {
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-};
-
-// Selection changed - for picker, radio buttons
-export const hapticSelection = () => {
-  Haptics.selectionAsync();
 };
