@@ -10,6 +10,7 @@ import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
 import { PopInView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { SafePressable } from '../components/SafePressable';
+import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -81,7 +82,7 @@ export const SettingsScreen: React.FC = () => {
         <PopInView delay={400}>
           <BouncyDangerCard
             onPress={() => {
-              hapticLight();
+              hapticWarning();
               setShowClearModal(true);
             }}
             colors={colors}
@@ -149,13 +150,15 @@ interface BouncyThemeCardProps {
 }
 
 const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, IconComponent, colors, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const { scaleAnim, checkScale, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.97,
+    enableCheckScale: true,
+  });
 
   useEffect(() => {
-    if (isSelected) {
+    if (isSelected && checkScale) {
       Animated.spring(checkScale, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    } else {
+    } else if (checkScale) {
       checkScale.setValue(0);
     }
   }, [isSelected, checkScale]);
@@ -200,7 +203,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
             </Text>
           </View>
         </View>
-        {isSelected && (
+        {isSelected && checkScale && (
           <Animated.View style={{ transform: [{ scale: checkScale }] }}>
             <View style={[styles.checkContainer, { backgroundColor: colors.accent }]}>
               <Check size={16} color="#000" />
@@ -219,16 +222,7 @@ interface BouncyDangerCardProps {
 }
 
 const BouncyDangerCard: React.FC<BouncyDangerCardProps> = ({ onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
+  const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({ pressInScale: 0.97 });
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -260,15 +254,10 @@ interface BouncyModalButtonProps {
 }
 
 const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, label, variant }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
+  const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.94,
+    includeHaptic: false,
+  });
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>

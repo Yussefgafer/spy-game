@@ -7,6 +7,7 @@ import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView } from '../components/BouncyAnimations';
+import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type VoteRouteProp = RouteProp<RootStackParamList, 'Vote'>;
@@ -285,13 +286,15 @@ interface BouncyVoteOptionProps {
 }
 
 const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const { scaleAnim, checkScale, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.95,
+    enableCheckScale: true,
+  });
 
   useEffect(() => {
-    if (selected) {
+    if (selected && checkScale) {
       Animated.spring(checkScale, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    } else {
+    } else if (checkScale) {
       checkScale.setValue(0);
     }
   }, [selected, checkScale]);
@@ -323,7 +326,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
         ]}
       >
         <Text style={[styles.playerOptionText, { color: colors.text }]}>{player}</Text>
-        {selected && (
+        {selected && checkScale && (
           <Animated.View style={{ transform: [{ scale: checkScale }] }}>
             <Check size={22} color={colors.accent} />
           </Animated.View>
@@ -387,30 +390,18 @@ interface BouncyNextButtonProps {
 }
 
 const BouncyNextButton: React.FC<BouncyNextButtonProps> = ({ onPress, disabled, isLastVoter, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    if (disabled) return;
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: -5, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }),
-      Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
-    ]).start();
-  };
+  const { scaleAnim, rotateInterpolate, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.94,
+    enableRotation: true,
+    rotateInValue: -5,
+    disabled,
+  });
 
   return (
     <Animated.View style={{
       transform: [
         { scale: scaleAnim },
-        { rotate: rotateAnim.interpolate({ inputRange: [-10, 10], outputRange: ['-10deg', '10deg'] }) },
+        { rotate: rotateInterpolate! },
       ],
       width: '100%',
     }}>

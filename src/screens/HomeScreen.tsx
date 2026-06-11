@@ -5,8 +5,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Play, Trophy, History, Settings } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
-import { hapticLight, hapticSuccess } from '../utils/haptics';
+import { hapticSuccess } from '../utils/haptics';
 import { PopInView, PulseView } from '../components/BouncyAnimations';
+import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -104,54 +105,33 @@ interface BouncyMenuCardProps {
 }
 
 const BouncyMenuCard: React.FC<BouncyMenuCardProps> = ({ item, colors, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { scaleAnim, rotateInterpolate, handlePressIn: bouncyHandlePressIn, handlePressOut: bouncyHandlePressOut } = useBouncyPress({
+    pressInScale: 0.96,
+    enableRotation: true,
+    rotateInValue: 1,
+    rotateInputRange: [0, 1],
+    rotateOutputRange: ['0deg', '-1deg'],
+  });
   const iconScale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.96,
-        tension: 400,
-        friction: 10,
-        useNativeDriver: true,
-      }),
-      Animated.spring(iconScale, {
-        toValue: 1.3,
-        tension: 500,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    hapticLight();
+    Animated.spring(iconScale, {
+      toValue: 1.3,
+      tension: 500,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+    bouncyHandlePressIn();
   };
 
   const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 500,
-        friction: 6,
-        useNativeDriver: true,
-      }),
-      Animated.spring(iconScale, {
-        toValue: 1,
-        tension: 400,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(rotateAnim, {
-        toValue: 0,
-        tension: 300,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.spring(iconScale, {
+      toValue: 1,
+      tension: 400,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+    bouncyHandlePressOut();
   };
 
   const IconComponent = item.Icon;
@@ -163,10 +143,7 @@ const BouncyMenuCard: React.FC<BouncyMenuCardProps> = ({ item, colors, onPress }
           transform: [
             { scale: scaleAnim },
             {
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '-1deg'],
-              }),
+              rotate: rotateInterpolate!,
             },
           ],
         },
@@ -205,43 +182,13 @@ interface BouncySettingsButtonProps {
 }
 
 const BouncySettingsButton: React.FC<BouncySettingsButtonProps> = ({ colors, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        tension: 400,
-        friction: 10,
-        useNativeDriver: true,
-      }),
-      Animated.spring(rotateAnim, {
-        toValue: 1,
-        tension: 300,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 500,
-        friction: 6,
-        useNativeDriver: true,
-      }),
-      Animated.spring(rotateAnim, {
-        toValue: 0,
-        tension: 300,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
+  const { scaleAnim, rotateInterpolate, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.95,
+    enableRotation: true,
+    rotateInValue: 1,
+    rotateInputRange: [0, 1],
+    rotateOutputRange: ['0deg', '10deg'],
+  });
 
   return (
     <Animated.View
@@ -250,10 +197,7 @@ const BouncySettingsButton: React.FC<BouncySettingsButtonProps> = ({ colors, onP
           transform: [
             { scale: scaleAnim },
             {
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '10deg'],
-              }),
+              rotate: rotateInterpolate!,
             },
           ],
         },
