@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, Modal, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, Modal, ScrollView, Animated, Linking, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
+import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info, Globe, ExternalLink } from 'lucide-react-native';
 import { useTheme, ThemeType, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { clearDatabase } from '../database/sqlite';
@@ -11,6 +11,10 @@ import { PopInView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { SafePressable } from '../components/SafePressable';
 import { useBouncyPress } from '../hooks/useBouncyPress';
+import app from '../../app.json';
+
+const APP_VERSION = app.expo.version;
+const REPO_URL = 'https://github.com/Yussefgafer/spy-game';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,6 +28,24 @@ export const SettingsScreen: React.FC = () => {
   const { colors, theme, setTheme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [showClearModal, setShowClearModal] = useState(false);
+  const [clearCooldown, setClearCooldown] = useState(3);
+
+  useEffect(() => {
+    if (!showClearModal) {
+      setClearCooldown(3);
+      return;
+    }
+    const t = setInterval(() => {
+      setClearCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(t);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [showClearModal]);
 
   const handleClearData = useCallback(async () => {
     hapticWarning();
@@ -100,10 +122,18 @@ export const SettingsScreen: React.FC = () => {
         <PopInView delay={500}>
           <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.aboutTitle, { color: colors.text }]}>🕵️ لعبة الجاسوس</Text>
-            <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>الإصدار 1.0.0</Text>
+            <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>الإصدار {APP_VERSION}</Text>
             <Text style={[styles.aboutDesc, { color: colors.textMuted }]}>
               لعبة جماعية ممتعة حيث يحاول اللاعبون كشف الجاسوس بينهم!
             </Text>
+            <Pressable
+              onPress={() => Linking.openURL(REPO_URL)}
+              style={[styles.repoLink, { backgroundColor: `${colors.accent}10`, borderColor: `${colors.accent}30` }]}
+            >
+              <Globe size={18} color={colors.accent} />
+              <Text style={[styles.repoLinkText, { color: colors.accent }]}>GitHub</Text>
+              <ExternalLink size={14} color={colors.accent} />
+            </Pressable>
           </View>
         </PopInView>
       </ScrollView>
@@ -129,8 +159,9 @@ export const SettingsScreen: React.FC = () => {
               <BouncyModalButton
                 onPress={handleClearData}
                 colors={colors}
-                label="مسح"
+                label={clearCooldown > 0 ? `مسح (${clearCooldown})` : 'مسح'}
                 variant="danger"
+                disabled={clearCooldown > 0}
               />
             </View>
           </View>
@@ -242,12 +273,14 @@ interface BouncyModalButtonProps {
   colors: ThemeColors;
   label: string;
   variant: 'cancel' | 'danger';
+  disabled?: boolean;
 }
 
-const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, label, variant }) => {
+const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, label, variant, disabled }) => {
   const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({
     pressInScale: 0.94,
     includeHaptic: false,
+    disabled,
   });
 
   return (
@@ -256,12 +289,13 @@ const BouncyModalButton: React.FC<BouncyModalButtonProps> = ({ onPress, colors, 
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
+        disabled={disabled}
         threshold={40}
         style={[
           styles.modalButton,
           variant === 'cancel'
             ? { borderColor: colors.border, borderWidth: 1.5 }
-            : { backgroundColor: colors.danger },
+            : { backgroundColor: disabled ? `${colors.danger}60` : colors.danger },
         ]}
       >
         <Text style={[
@@ -397,6 +431,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  repoLink: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  repoLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
