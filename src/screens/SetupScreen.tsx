@@ -14,7 +14,7 @@ import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { AutoCompleteInput } from '../components/AutoCompleteInput';
 import { BouncyStartButton } from '../components/BouncyButton';
-import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT, ANIM_SPRING_BOUNCIER } from '../constants/animations';
+import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -238,16 +238,10 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
-      toValue: 1.15,
+      toValue: 1,
       ...ANIM_SPRING_PRESS_OUT,
       useNativeDriver: true,
-    }).start(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        ...ANIM_SPRING_BOUNCIER,
-        useNativeDriver: true,
-      }).start();
-    });
+    }).start();
   };
 
   useEffect(() => {
