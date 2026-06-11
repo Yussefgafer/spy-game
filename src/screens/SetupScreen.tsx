@@ -261,7 +261,7 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
         Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
       ]).start();
     }
-  }, [selected]);
+  }, [selected, shakeAnim]);
 
   return (
     <Animated.View

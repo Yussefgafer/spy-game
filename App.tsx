@@ -58,11 +58,12 @@ function MainApp() {
   const [dbError, setDbError] = useState(false);
 
   useEffect(() => {
-    const success = initDB();
-    if (!success) {
-      setDbError(true);
-      console.error('فشل تهيئة قاعدة البيانات — التطبيق لن يعمل بشكل صحيح');
-    }
+    initDB().then((success) => {
+      if (!success) {
+        setDbError(true);
+        console.error('فشل تهيئة قاعدة البيانات — التطبيق لن يعمل بشكل صحيح');
+      }
+    });
   }, []);
 
   if (dbError) {

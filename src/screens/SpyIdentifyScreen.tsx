@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, Pressable } from 'react-native';
+import { StyleSheet, Text, View, TextInput } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
-import { PopInView, FloatingView } from '../components/BouncyAnimations';
+import { PopInView } from '../components/BouncyAnimations';
 import { SafePressable } from '../components/SafePressable';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SpyIdentify'>;

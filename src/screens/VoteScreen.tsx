@@ -299,14 +299,21 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
     }
   }, [selected, checkScale]);
 
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+  };
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
         onPressIn={handlePressIn}
-        onPressOut={() => {
-          handlePressOut();
-          onPress();
-        }}
+        onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel={`صوّت على ${player}`}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
@@ -337,16 +344,23 @@ interface BouncySkipOptionProps {
 }
 
 const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, colors }) => {
-  const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({ pressInScale: 0.95 });
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
+    hapticLight();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+  };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
         onPressIn={handlePressIn}
-        onPressOut={() => {
-          handlePressOut();
-          onPress();
-        }}
+        onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel="أفضل عدم التصويت"
         accessibilityRole="radio"
         accessibilityState={{ selected: skipped }}

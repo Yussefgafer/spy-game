@@ -106,15 +106,16 @@ export const ResultsScreen: React.FC = () => {
 
   useEffect(() => {
     if (saved) return;
-    const success = saveMatchResult(
+    saveMatchResult(
       categoryName,
       secretWord,
       spies,
       winner,
       totalPoints,
       playerResults
-    );
-    if (success) setSaved(true);
+    ).then((success) => {
+      if (success) setSaved(true);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -236,7 +237,7 @@ const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, spyGuessed
       Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 6, useNativeDriver: true }),
       Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [scaleAnim, rotateAnim]);
 
   // نصوص مختلفة حسب السيناريو (3 حالات للجواسيس، 1 للأبرياء)
   const getTitleAndSubtitle = (): { title: string; subtitle: string } => {
@@ -352,7 +353,7 @@ interface BouncyPlayerRowProps {
   colors: ThemeColors;
 }
 
-const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly, pointsGained, colors }) => {
+const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly: _votedCorrectly, pointsGained, colors }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   return (
