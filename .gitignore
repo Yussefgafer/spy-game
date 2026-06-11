@@ -97,4 +97,4 @@ pnpm-workspace.yaml
 android
 ios
 pnpm-lock.yaml
-my-project/.gemini
+.gemini
