@@ -246,7 +246,6 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -254,6 +253,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         style={[
           styles.wordOption,
           {
