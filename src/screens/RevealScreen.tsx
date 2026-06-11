@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -6,11 +6,12 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
+import { REVEAL_HOLD_DURATION, ANIM_TIMING_NORMAL } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RevealRouteProp = RouteProp<RootStackParamList, 'Reveal'>;
 
-const REVEAL_DURATION = 1500; // 1.5 seconds to reveal
+const REVEAL_DURATION = REVEAL_HOLD_DURATION;
 
 export const RevealScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -40,12 +41,18 @@ export const RevealScreen: React.FC = () => {
     };
   }, [currentIndex]);
 
-  const handlePressIn = () => {
+  const handleRevealComplete = useCallback(() => {
+    revealTimerRef.current = null;
+    setIsPressing(false);
+    hapticSuccess();
+    setIsRevealed(true);
+  }, []);
+
+  const handlePressIn = useCallback(() => {
     if (isRevealed || isPressing) return;
 
     setIsPressing(true);
 
-    // Start progress animation
     Animated.timing(progressAnim, {
       toValue: 1,
       duration: REVEAL_DURATION,
@@ -57,30 +64,28 @@ export const RevealScreen: React.FC = () => {
       useNativeDriver: true,
     }).start();
 
-    // Haptic feedback at start
     hapticLight();
 
-    // Set timer for reveal
     revealTimerRef.current = setTimeout(() => {
       handleRevealComplete();
     }, REVEAL_DURATION);
-  };
+    // progressAnim/scaleAnim من useRef (ثابتة)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRevealed, isPressing, handleRevealComplete]);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
     if (isRevealed || !isPressing) return;
 
     setIsPressing(false);
 
-    // Cancel any pending timer
     if (revealTimerRef.current) {
       clearTimeout(revealTimerRef.current);
       revealTimerRef.current = null;
     }
 
-    // Reset progress animation
     Animated.timing(progressAnim, {
       toValue: 0,
-      duration: 200,
+      ...ANIM_TIMING_NORMAL,
       useNativeDriver: false,
     }).start();
 
@@ -88,20 +93,11 @@ export const RevealScreen: React.FC = () => {
       toValue: 1,
       useNativeDriver: true,
     }).start();
-  };
+    // progressAnim/scaleAnim من useRef (ثابتة)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRevealed, isPressing]);
 
-  const handleRevealComplete = () => {
-    // Clear timer reference
-    revealTimerRef.current = null;
-    setIsPressing(false);
-
-    // Success haptic
-    hapticSuccess();
-
-    setIsRevealed(true);
-  };
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!isRevealed) {
       hapticError();
       return;
@@ -112,7 +108,6 @@ export const RevealScreen: React.FC = () => {
     if (isLastPlayer) {
       navigation.navigate('Gameplay', { players, spies, secretWord, categoryName, categoryId });
     } else {
-      // Cleanup before changing player
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
@@ -124,7 +119,9 @@ export const RevealScreen: React.FC = () => {
       progressAnim.setValue(0);
       scaleAnim.setValue(1);
     }
-  };
+    // progressAnim/scaleAnim من useRef (ثابتة)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRevealed, isLastPlayer, navigation, players, spies, secretWord, categoryName, categoryId, currentIndex]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],

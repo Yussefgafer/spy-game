@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,33 +37,34 @@ export const SetupScreen: React.FC = () => {
     loadSavedPrefs();
   }, []);
 
-  /**
-   * يُستدعى من AutoCompleteInput عند اختيار/إضافة لاعب.
-   * AutoCompleteInput يفلتر التكرار، لكن هنا حماية مزدوجة.
-   */
-  const handlePlayerAdded = (player: Player) => {
-    if (players.includes(player.name)) {
-      hapticError();
-      return;
-    }
-    if (players.length >= MAX_PLAYERS) {
-      Alert.alert('تنبيه', `الحد الأقصى ${MAX_PLAYERS} لاعبين`);
-      return;
-    }
-    setPlayers((prev) => [...prev, player.name]);
-  };
+  const handlePlayerAdded = useCallback((player: Player) => {
+    setPlayers((prev) => {
+      if (prev.includes(player.name)) {
+        hapticError();
+        return prev;
+      }
+      if (prev.length >= MAX_PLAYERS) {
+        Alert.alert('تنبيه', `الحد الأقصى ${MAX_PLAYERS} لاعبين`);
+        return prev;
+      }
+      return [...prev, player.name];
+    });
+  }, []);
 
-  const handleRemovePlayer = (name: string) => {
+  const handleRemovePlayer = useCallback((name: string) => {
     hapticLight();
     setPlayers((prev) => prev.filter((p) => p !== name));
-  };
+  }, []);
 
-  const handleStartGame = async () => {
-    if (players.length < MIN_PLAYERS) {
-      hapticError();
-      Alert.alert('تنبيه', `الحد الأدنى ${MIN_PLAYERS} لاعبين`);
-      return;
-    }
+  const handleStartGame = useCallback(async () => {
+    setPlayers((prev) => {
+      if (prev.length < MIN_PLAYERS) {
+        hapticError();
+        Alert.alert('تنبيه', `الحد الأدنى ${MIN_PLAYERS} لاعبين`);
+        return prev;
+      }
+      return prev;
+    });
 
     hapticSuccess();
 
@@ -73,7 +74,6 @@ export const SetupScreen: React.FC = () => {
     });
 
     const shuffledPlayers = shuffleArray(players);
-    // جاسوس واحد فقط — مؤقتاً حتى يتم دعم جواسيس متعددين
     const selectedSpies: string[] = [shuffledPlayers[0]];
 
     const category = CATEGORIES.find((c) => c.id === selectedCategory);
@@ -87,7 +87,7 @@ export const SetupScreen: React.FC = () => {
       categoryName: category?.name || '',
       categoryId: selectedCategory,
     });
-  };
+  }, [navigation, players, selectedCategory]);
 
   const isPlayersFull = players.length >= MAX_PLAYERS;
 

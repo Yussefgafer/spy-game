@@ -1,7 +1,9 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native';
 
-// Functional component للشاشة — يستخدم ثيم النظام
+// ErrorScreen تتعمد استخدام useColorScheme بدلاً من ThemeContext.
+// ThemeContext يمكن يكون سبب الكراش نفسه، فاستخدامه هنا يسبب كراش ثاني.
+// useColorScheme أمن لأنه API native من RN وما يعتمد على React context.
 const ErrorScreen: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => {
   const scheme = useColorScheme();
   const isDark = scheme !== 'light';
@@ -56,8 +58,8 @@ class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('=== UNCAUGHT ERROR ===');
     console.error('Error:', error.message);
-    console.error('Stack:', error.stack);
-    console.error('Component Stack:', errorInfo.componentStack);
+    console.error('Stack:', error.stack ?? '(no stack)');
+    console.error('Component Stack:', errorInfo.componentStack ?? '(no component stack)');
     console.error('======================');
   }
 

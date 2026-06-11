@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView } from '../components/BouncyAnimations';
 import { useBouncyPress } from '../hooks/useBouncyPress';
+import { ANIM_SPRING_BOUNCIER } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type VoteRouteProp = RouteProp<RootStackParamList, 'Vote'>;
@@ -50,28 +51,31 @@ export const VoteScreen: React.FC = () => {
   const isLastVoter = currentVoterIndex === players.length - 1;
   const hasVoted = votes[currentVoter] !== undefined || skippedVoters.has(currentVoter);
 
-  const handleVote = (suspectedSpy: string) => {
+  const handleVote = useCallback((suspectedSpy: string) => {
     hapticLight();
-    setVotes({ ...votes, [currentVoter]: suspectedSpy });
-    setSkippedVoters(prev => {
+    setVotes((prev) => ({ ...prev, [currentVoter]: suspectedSpy }));
+    setSkippedVoters((prev) => {
       const newSet = new Set(prev);
       newSet.delete(currentVoter);
       return newSet;
     });
-  };
+  }, [currentVoter]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     hapticLight();
-    const newSkipped = new Set(skippedVoters);
-    newSkipped.add(currentVoter);
-    setSkippedVoters(newSkipped);
-    // Remove any previous vote if exists
-    const newVotes = { ...votes };
-    delete newVotes[currentVoter];
-    setVotes(newVotes);
-  };
+    setSkippedVoters((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(currentVoter);
+      return newSet;
+    });
+    setVotes((prev) => {
+      const newVotes = { ...prev };
+      delete newVotes[currentVoter];
+      return newVotes;
+    });
+  }, [currentVoter]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!hasVoted) return;
 
     hapticSuccess();
@@ -79,7 +83,6 @@ export const VoteScreen: React.FC = () => {
     if (isLastVoter) {
       const innocentCount = players.length - spies.length;
 
-      // الجواسيس يُستبعدون من correctVoters
       const correctVoters: string[] = [];
       Object.entries(votes).forEach(([voter, suspected]) => {
         if (spies.includes(suspected) && !spies.includes(voter)) {
@@ -90,7 +93,6 @@ export const VoteScreen: React.FC = () => {
       const isUnanimous = correctVoters.length === innocentCount;
 
       if (isUnanimous) {
-        // كل الأبرياء صوّتوا على الجاسوس → إجماع → نتائج مباشرة
         navigation.navigate('Results', {
           players,
           spies,
@@ -101,7 +103,6 @@ export const VoteScreen: React.FC = () => {
           winner: 'PLAYERS',
         });
       } else {
-        // في واحد اختلف/تخطى → الجاسوس يحصل على فرصة التخمين
         navigation.navigate('SpyGuess', {
           players,
           spies,
@@ -112,9 +113,9 @@ export const VoteScreen: React.FC = () => {
         });
       }
     } else {
-      setCurrentVoterIndex(currentVoterIndex + 1);
+      setCurrentVoterIndex((prev) => prev + 1);
     }
-  };
+  }, [hasVoted, isLastVoter, players, spies, secretWord, categoryName, categoryId, votes, navigation]);
 
   const isSelected = (player: string) => votes[currentVoter] === player;
 
@@ -261,7 +262,7 @@ const BouncyVoterCard: React.FC<BouncyVoterCardProps> = ({ voter, voterNumber, t
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, { toValue: 1, ...ANIM_SPRING_BOUNCIER, useNativeDriver: true }).start();
   }, [voter, scaleAnim]);
 
   return (

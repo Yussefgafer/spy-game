@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -6,6 +6,7 @@ import { Timer, AlertTriangle, ArrowLeft, Zap, Sparkles } from 'lucide-react-nat
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
+import { SPY_GUESS_TIMER } from '../constants/animations';
 import { shuffleArray } from '../utils/shuffle';
 import { hapticSuccess, hapticError, hapticWarning, hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
@@ -14,7 +15,7 @@ import { useBouncyPress } from '../hooks/useBouncyPress';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SpyGuessRouteProp = RouteProp<RootStackParamList, 'SpyGuess'>;
 
-const TIMER_SECONDS = 60;
+const TIMER_SECONDS = SPY_GUESS_TIMER;
 
 export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -28,7 +29,35 @@ export const SpyGuessScreen: React.FC = () => {
   const [timedOut, setTimedOut] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // إعداد الكلمات وبدء المؤقت
+  // تثبيت مرجع secretWord لتجنب stale closure في المؤقت
+  const secretWordRef = useRef(secretWord);
+  secretWordRef.current = secretWord;
+
+  const handleGuess = useCallback((word: string, _isTimeout = false) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const isCorrect = word === secretWordRef.current;
+
+    if (isCorrect) {
+      hapticSuccess();
+    } else {
+      hapticError();
+    }
+
+    navigation.navigate('Results', {
+      players,
+      spies,
+      secretWord: secretWordRef.current,
+      categoryName: categoryName || '',
+      categoryId,
+      correctVoters,
+      spyGuessedWord: isCorrect,
+      winner: isCorrect ? 'SPY' : 'PLAYERS',
+    });
+  }, [navigation, players, spies, categoryName, categoryId, correctVoters]);
+
+  // إعداد الكلمات وبدء المؤقت — مرة واحدة فقط عند التحميل
+  // categoryId/secretWord ثابتة من route.params — لا تحتاج تغيير
   useEffect(() => {
     const category = CATEGORIES.find((c) => c.id === categoryId);
     if (!category) return;
@@ -53,40 +82,16 @@ export const SpyGuessScreen: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // مراقبة انتهاء الوقت بشكل منفصل — لا navigation داخل setState
+  // مراقبة انتهاء الوقت — تستخدم handleGuess المثبت (useCallback + ref)
   useEffect(() => {
     if (timeLeft === 0 && !timedOut) {
       setTimedOut(true);
-      handleGuess(secretWord, true);
+      handleGuess(secretWordRef.current, true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft]);
-
-  const handleGuess = (word: string, _isTimeout = false) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    const isCorrect = word === secretWord;
-
-    if (isCorrect) {
-      hapticSuccess();
-    } else {
-      hapticError();
-    }
-
-    navigation.navigate('Results', {
-      players,
-      spies,
-      secretWord,
-      categoryName: categoryName || '',
-      categoryId,
-      correctVoters,
-      spyGuessedWord: isCorrect,
-      winner: isCorrect ? 'SPY' : 'PLAYERS',
-    });
-  };
+  }, [timeLeft, timedOut, handleGuess]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
