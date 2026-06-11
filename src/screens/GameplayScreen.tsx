@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,8 +16,6 @@ export const GameplayScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<GameplayRouteProp>();
   const { players, spies, secretWord, categoryName, categoryId } = route.params;
-
-  const [isPaused, setIsPaused] = useState(false);
 
   const handleEndQuestions = () => {
     hapticSuccess();

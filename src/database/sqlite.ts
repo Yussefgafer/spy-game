@@ -197,6 +197,93 @@ export const getHistory = async (): Promise<Match[]> => {
   }
 };
 
+/** بيانات لاعب في نتيجة المباراة */
+export interface MatchResultPlayer {
+  name: string;
+  role: 'SPY' | 'PLAYER';
+  votedCorrectly: boolean;
+  pointsGained: number;
+}
+
+/** الفائز في المباراة */
+export type MatchWinner = 'SPY' | 'PLAYERS';
+
+/**
+ * إدراج سجل المباراة في جدول matches وإرجاع معرف السطر الجديد
+ */
+const insertMatchRecord = (
+  database: SQLite.SQLiteDatabase,
+  params: {
+    category: string;
+    secretWord: string;
+    spyNames: string[];
+    winner: MatchWinner;
+    pointsPool: number;
+  },
+): number => {
+  const result = database.runSync(
+    `INSERT INTO matches (date, category, secret_word, spy_names, winner, points_pool)
+     VALUES (?, ?, ?, ?, ?, ?);`,
+    [
+      new Date().toISOString(),
+      params.category,
+      params.secretWord,
+      params.spyNames.join('، '),
+      params.winner,
+      params.pointsPool,
+    ],
+  );
+  return result.lastInsertRowId;
+};
+
+/**
+ * إدراج تفاصيل لاعب واحد في جدول match_details
+ */
+const insertMatchDetail = (
+  database: SQLite.SQLiteDatabase,
+  matchId: number,
+  player: MatchResultPlayer,
+): void => {
+  database.runSync(
+    `INSERT INTO match_details (match_id, player_name, role, voted_correctly, points_gained)
+     VALUES (?, ?, ?, ?, ?);`,
+    [matchId, player.name.trim(), player.role, player.votedCorrectly ? 1 : 0, player.pointsGained],
+  );
+};
+
+/**
+ * التأكد من وجود اللاعب في جدول players
+ * (في حال تم مسح قاعدة البيانات وبقي اللاعب في AsyncStorage)
+ */
+const ensurePlayerExists = (
+  database: SQLite.SQLiteDatabase,
+  playerName: string,
+): void => {
+  database.runSync('INSERT OR IGNORE INTO players (name) VALUES (?);', [playerName.trim()]);
+};
+
+/**
+ * تحديث إحصائيات اللاعب التراكمية بعد مباراة
+ */
+const updatePlayerCumulativeStats = (
+  database: SQLite.SQLiteDatabase,
+  player: MatchResultPlayer,
+  winner: MatchWinner,
+): void => {
+  const isSpy = player.role === 'SPY';
+  const isWinner = (isSpy && winner === 'SPY') || (!isSpy && winner === 'PLAYERS');
+
+  database.runSync(
+    `UPDATE players
+     SET total_points = total_points + ?,
+         matches_played = matches_played + 1,
+         spy_count = spy_count + ?,
+         spy_wins = spy_wins + ?
+     WHERE name = ?;`,
+    [player.pointsGained, isSpy ? 1 : 0, isSpy && isWinner ? 1 : 0, player.name.trim()],
+  );
+};
+
 /**
  * حفظ نتيجة مباراة جديدة وتحديث إحصائيات اللاعبين في Transaction واحدة
  */
@@ -204,81 +291,27 @@ export const saveMatchResult = (
   category: string,
   secretWord: string,
   spyNames: string[],
-  winner: 'SPY' | 'PLAYERS',
+  winner: MatchWinner,
   pointsPool: number,
-  playersDetails: {
-    name: string;
-    role: 'SPY' | 'PLAYER';
-    votedCorrectly: boolean;
-    pointsGained: number;
-  }[]
+  playersDetails: MatchResultPlayer[],
 ): boolean => {
+  const database = getDatabase();
+
   try {
-    const database = getDatabase();
-    
-    // بدء الـ Transaction يدوياً لضمان سلامة البيانات
     database.execSync('BEGIN TRANSACTION;');
 
-    const dateStr = new Date().toISOString();
-    const spyNamesStr = spyNames.join('، ');
+    const matchId = insertMatchRecord(database, { category, secretWord, spyNames, winner, pointsPool });
 
-    // 1. حفظ المباراة في جدول matches
-    const matchInsertResult = database.runSync(
-      `INSERT INTO matches (date, category, secret_word, spy_names, winner, points_pool) 
-       VALUES (?, ?, ?, ?, ?, ?);`,
-      [dateStr, category, secretWord, spyNamesStr, winner, pointsPool]
-    );
-
-    const matchId = matchInsertResult.lastInsertRowId;
-
-    // 2. حفظ تفاصيل اللاعبين وتحديث إحصائياتهم التراكمية
     for (const player of playersDetails) {
-      const trimmedName = player.name.trim();
-
-      // أ. حفظ التفاصيل في جدول match_details
-      database.runSync(
-        `INSERT INTO match_details (match_id, player_name, role, voted_correctly, points_gained) 
-         VALUES (?, ?, ?, ?, ?);`,
-        [
-          matchId,
-          trimmedName,
-          player.role,
-          player.votedCorrectly ? 1 : 0,
-          player.pointsGained,
-        ]
-      );
-
-      // ب. التأكد من وجود اللاعب في جدول players (في حال تم مسح قاعدة البيانات وبقي اللاعب في AsyncStorage)
-      database.runSync(
-        'INSERT OR IGNORE INTO players (name) VALUES (?);',
-        [trimmedName]
-      );
-
-      // ج. تحديث جدول players التراكمي
-      const isSpy = player.role === 'SPY';
-      const isWinner = (isSpy && winner === 'SPY') || (!isSpy && winner === 'PLAYERS');
-
-      database.runSync(
-        `UPDATE players 
-         SET total_points = total_points + ?,
-             matches_played = matches_played + 1,
-             spy_count = spy_count + ?,
-             spy_wins = spy_wins + ?
-         WHERE name = ?;`,
-        [
-          player.pointsGained,
-          isSpy ? 1 : 0,
-          (isSpy && isWinner) ? 1 : 0,
-          trimmedName,
-        ]
-      );
+      insertMatchDetail(database, matchId, player);
+      ensurePlayerExists(database, player.name);
+      updatePlayerCumulativeStats(database, player, winner);
     }
 
     database.execSync('COMMIT;');
     return true;
   } catch (error) {
     try {
-      const database = getDatabase();
       database.execSync('ROLLBACK;');
     } catch (rollbackError) {
       console.error('Rollback failed:', rollbackError);

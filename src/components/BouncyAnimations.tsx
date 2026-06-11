@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, ViewStyle } from 'react-native';
-import { StyleProp } from 'react-native';
+import { Animated, Easing, ViewStyle, StyleProp } from 'react-native';
 
 // Spring configs
 const SPRING_CONFIG = {
@@ -223,4 +222,4 @@ export const SlideInBounceView: React.FC<SlideInBounceViewProps> = ({
   );
 };
 
-export const styles = StyleSheet.create({});
+
