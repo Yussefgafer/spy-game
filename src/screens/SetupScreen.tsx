@@ -75,19 +75,34 @@ export const SetupScreen: React.FC = () => {
       categoryId: selectedCategory,
     });
 
+    let resolvedCategoryId = selectedCategory;
+    let resolvedCategoryName: string | undefined;
+    let resolvedWords: string[];
+
+    if (selectedCategory === 'random') {
+      const realCategories = CATEGORIES.filter((c) => c.id !== 'random');
+      const randomCat = realCategories[Math.floor(Math.random() * realCategories.length)];
+      resolvedCategoryId = randomCat.id;
+      resolvedCategoryName = randomCat.name;
+      resolvedWords = randomCat.words;
+    } else {
+      const category = CATEGORIES.find((c) => c.id === selectedCategory);
+      resolvedCategoryName = category?.name;
+      resolvedWords = category?.words || [];
+    }
+
     const shuffledPlayers = shuffleArray(players);
     const selectedSpies: string[] = [shuffledPlayers[0]];
 
-    const category = CATEGORIES.find((c) => c.id === selectedCategory);
-    const shuffledWords = shuffleArray(category?.words || []);
+    const shuffledWords = shuffleArray(resolvedWords);
     const secretWord = shuffledWords[0];
 
     navigation.navigate('Reveal', {
       players,
       spies: selectedSpies,
       secretWord,
-      categoryName: category?.name || '',
-      categoryId: selectedCategory,
+      categoryName: resolvedCategoryName || '',
+      categoryId: resolvedCategoryId,
     });
   }, [navigation, players, selectedCategory]);
 
