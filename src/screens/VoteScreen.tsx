@@ -6,7 +6,7 @@ import { Check, ArrowLeft, MinusCircle, Vote } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
-import { PopInView, SlideInBounceView, PulseView, ShakeView } from '../components/BouncyAnimations';
+import { PopInView, SlideInBounceView, PulseView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type VoteRouteProp = RouteProp<RootStackParamList, 'Vote'>;
