@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { Pressable, PressableProps } from 'react-native';
-import { hapticLight } from '../utils/haptics';
 
 interface SafePressableProps extends PressableProps {
   children: React.ReactNode;
@@ -16,6 +15,9 @@ interface SafePressableProps extends PressableProps {
  *   2) onPress
  * لذا يجب فحص المسافة داخل onPress (وليس onPressOut) قبل استدعاء onPress الحقيقي.
  * عدم القيام بذلك يجعل onPress لا يُستدعى أبداً (الـ ref يكون null بسبب تنظيف onPressOut).
+ *
+ * ملاحظة: هذا المكوّن لا يضيف اهتزاز لمسي تلقائياً. استخدم useBouncyPress
+ * أو hapticLight في handlePressIn الخاص بك إذا كنت تحتاج للاهتزاز.
  */
 export const SafePressable: React.FC<SafePressableProps> = ({
   children,
@@ -29,7 +31,6 @@ export const SafePressable: React.FC<SafePressableProps> = ({
 
   const handlePressIn: PressableProps['onPressIn'] = (e) => {
     startPosRef.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
-    hapticLight();
     onPressIn?.(e);
   };
 
