@@ -134,13 +134,13 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   /**
    * إضافة لاعب جديد للـ DB ثم إبلاغ الأب.
    * - يتجاهل الأسماء الفارغة أو المكررة.
-   * - addPlayer متزامن ويعيد null عند الفشل.
+   * - addPlayer غير متزامن ويعيد null عند الفشل.
    */
-  const handleAddNew = useCallback(() => {
+  const handleAddNew = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed || activePlayers.includes(trimmed)) return;
 
-    const newPlayer = addPlayer(trimmed);
+    const newPlayer = await addPlayer(trimmed);
     if (!newPlayer) return;
 
     onPlayerAdded(newPlayer);
