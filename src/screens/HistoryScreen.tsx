@@ -133,7 +133,7 @@ const BouncyMatchCard: React.FC<BouncyMatchCardProps> = ({ match, isExpanded, is
       friction: 12,
       useNativeDriver: false,
     }).start();
-  }, [isExpanded]);
+  }, [isExpanded, expandAnim]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.98, tension: 400, friction: 10, useNativeDriver: true }).start();

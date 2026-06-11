@@ -12,7 +12,6 @@ const SPRING_CONFIG = {
 interface PopInViewProps {
   children: React.ReactNode;
   delay?: number;
-  duration?: number;
   style?: StyleProp<ViewStyle>;
   scale?: number;
 }
@@ -20,7 +19,6 @@ interface PopInViewProps {
 export const PopInView: React.FC<PopInViewProps> = ({
   children,
   delay = 0,
-  duration = 500,
   style,
   scale = 1,
 }) => {
@@ -49,7 +47,7 @@ export const PopInView: React.FC<PopInViewProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [scaleAnim, opacityAnim, rotateAnim, scale, delay]);
 
   const animatedStyle = {
     transform: [
@@ -109,7 +107,7 @@ export const FloatingView: React.FC<FloatingViewProps> = ({
     return () => {
       animation.stop();
     };
-  }, []);
+  }, [floatAnim, duration, distance]);
 
   const animatedStyle = {
     transform: [
@@ -169,7 +167,7 @@ export const PulseView: React.FC<PulseViewProps> = ({
     return () => {
       animation.stop();
     };
-  }, []);
+  }, [scaleAnim, duration, minScale, maxScale]);
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
@@ -213,7 +211,7 @@ export const SlideInBounceView: React.FC<SlideInBounceViewProps> = ({
         ...SPRING_CONFIG.bouncy,
       }),
     ]).start();
-  }, []);
+  }, [translateY, opacity, scale, delay]);
 
   return (
     <Animated.View style={[{ transform: [{ translateY }, { scale }], opacity }, style]}>

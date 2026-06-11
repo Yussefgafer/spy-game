@@ -191,7 +191,7 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, f
       pulseLoop?.stop();
       shakeLoop?.stop();
     };
-  }, [isUrgent]);
+  }, [isUrgent, pulseAnim, shakeAnim]);
 
   return (
     <Animated.View style={[
@@ -237,7 +237,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
     } else {
       checkScale.setValue(0);
     }
-  }, [selected]);
+  }, [selected, checkScale]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
