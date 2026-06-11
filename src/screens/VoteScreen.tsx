@@ -222,8 +222,7 @@ const BouncyProgressDot: React.FC<BouncyProgressDotProps> = ({ index, currentInd
     return () => {
       animation?.stop();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCurrent]);
+  }, [isCurrent, scaleAnim]);
 
   const getBgColor = () => {
     if (isPast) return colors.accent;
@@ -257,8 +256,7 @@ const BouncyVoterCard: React.FC<BouncyVoterCardProps> = ({ voter, voterNumber, t
 
   useEffect(() => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 8, useNativeDriver: true }).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voter]);
+  }, [voter, scaleAnim]);
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
@@ -296,8 +294,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
     } else {
       checkScale.setValue(0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected]);
+  }, [selected, checkScale]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();

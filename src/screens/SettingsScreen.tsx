@@ -158,8 +158,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
     } else {
       checkScale.setValue(0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSelected]);
+  }, [isSelected, checkScale]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();

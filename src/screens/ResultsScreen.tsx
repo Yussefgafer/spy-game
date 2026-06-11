@@ -237,8 +237,7 @@ const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, spyGuessed
       Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 6, useNativeDriver: true }),
       Animated.spring(rotateAnim, { toValue: 0, tension: 300, friction: 8, useNativeDriver: true }),
     ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scaleAnim, rotateAnim]);
 
   // نصوص مختلفة حسب السيناريو (3 حالات للجواسيس، 1 للأبرياء)
   const getTitleAndSubtitle = (): { title: string; subtitle: string } => {
