@@ -261,6 +261,7 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
         Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
       ]).start();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   return (

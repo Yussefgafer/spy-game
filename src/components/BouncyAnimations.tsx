@@ -20,7 +20,7 @@ interface PopInViewProps {
 export const PopInView: React.FC<PopInViewProps> = ({
   children,
   delay = 0,
-  duration = 500,
+  duration: _duration = 500,
   style,
   scale = 1,
 }) => {
@@ -49,6 +49,7 @@ export const PopInView: React.FC<PopInViewProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = {
@@ -109,6 +110,7 @@ export const FloatingView: React.FC<FloatingViewProps> = ({
     return () => {
       animation.stop();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = {
@@ -169,6 +171,7 @@ export const PulseView: React.FC<PulseViewProps> = ({
     return () => {
       animation.stop();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -213,6 +216,7 @@ export const SlideInBounceView: React.FC<SlideInBounceViewProps> = ({
         ...SPRING_CONFIG.bouncy,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

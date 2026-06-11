@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, Modal, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, Modal, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette, Database, Info } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { useTheme, ThemeType, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { clearDatabase } from '../database/sqlite';
 import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
-import { PopInView, FloatingView } from '../components/BouncyAnimations';
+import { PopInView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { SafePressable } from '../components/SafePressable';
 
@@ -158,6 +158,7 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
     } else {
       checkScale.setValue(0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSelected]);
 
   const handlePressIn = () => {
