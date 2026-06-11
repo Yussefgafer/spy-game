@@ -299,15 +299,6 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
     }
   }, [selected, checkScale]);
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
-
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
