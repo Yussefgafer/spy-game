@@ -46,12 +46,12 @@ export interface MatchDetail {
 /**
  * تهيئة الجداول في قاعدة البيانات عند إقلاع التطبيق
  */
-export const initDB = (): boolean => {
+export const initDB = async (): Promise<boolean> => {
   try {
     const database = getDatabase();
-    database.execSync(`
+    await database.execAsync(`
       PRAGMA foreign_keys = ON;
-      
+
       CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
@@ -90,18 +90,18 @@ export const initDB = (): boolean => {
 /**
  * إضافة لاعب جديد لقاعدة البيانات
  */
-export const addPlayer = (name: string): Player | null => {
+export const addPlayer = async (name: string): Promise<Player | null> => {
   try {
     const database = getDatabase();
     const trimmedName = name.trim();
     if (!trimmedName) return null;
 
-    database.runSync(
+    await database.runAsync(
       'INSERT OR IGNORE INTO players (name) VALUES (?);',
       [trimmedName]
     );
 
-    const result = database.getFirstSync<Player>(
+    const result = await database.getFirstAsync<Player>(
       'SELECT * FROM players WHERE name = ?;',
       [trimmedName]
     );
@@ -211,7 +211,7 @@ export type MatchWinner = 'SPY' | 'PLAYERS';
 /**
  * إدراج سجل المباراة في جدول matches وإرجاع معرف السطر الجديد
  */
-const insertMatchRecord = (
+const insertMatchRecord = async (
   database: SQLite.SQLiteDatabase,
   params: {
     category: string;
@@ -220,8 +220,8 @@ const insertMatchRecord = (
     winner: MatchWinner;
     pointsPool: number;
   },
-): number => {
-  const result = database.runSync(
+): Promise<number> => {
+  const result = await database.runAsync(
     `INSERT INTO matches (date, category, secret_word, spy_names, winner, points_pool)
      VALUES (?, ?, ?, ?, ?, ?);`,
     [
@@ -239,12 +239,12 @@ const insertMatchRecord = (
 /**
  * إدراج تفاصيل لاعب واحد في جدول match_details
  */
-const insertMatchDetail = (
+const insertMatchDetail = async (
   database: SQLite.SQLiteDatabase,
   matchId: number,
   player: MatchResultPlayer,
-): void => {
-  database.runSync(
+): Promise<void> => {
+  await database.runAsync(
     `INSERT INTO match_details (match_id, player_name, role, voted_correctly, points_gained)
      VALUES (?, ?, ?, ?, ?);`,
     [matchId, player.name.trim(), player.role, player.votedCorrectly ? 1 : 0, player.pointsGained],
@@ -255,25 +255,25 @@ const insertMatchDetail = (
  * التأكد من وجود اللاعب في جدول players
  * (في حال تم مسح قاعدة البيانات وبقي اللاعب في AsyncStorage)
  */
-const ensurePlayerExists = (
+const ensurePlayerExists = async (
   database: SQLite.SQLiteDatabase,
   playerName: string,
-): void => {
-  database.runSync('INSERT OR IGNORE INTO players (name) VALUES (?);', [playerName.trim()]);
+): Promise<void> => {
+  await database.runAsync('INSERT OR IGNORE INTO players (name) VALUES (?);', [playerName.trim()]);
 };
 
 /**
  * تحديث إحصائيات اللاعب التراكمية بعد مباراة
  */
-const updatePlayerCumulativeStats = (
+const updatePlayerCumulativeStats = async (
   database: SQLite.SQLiteDatabase,
   player: MatchResultPlayer,
   winner: MatchWinner,
-): void => {
+): Promise<void> => {
   const isSpy = player.role === 'SPY';
   const isWinner = (isSpy && winner === 'SPY') || (!isSpy && winner === 'PLAYERS');
 
-  database.runSync(
+  await database.runAsync(
     `UPDATE players
      SET total_points = total_points + ?,
          matches_played = matches_played + 1,
@@ -286,36 +286,30 @@ const updatePlayerCumulativeStats = (
 
 /**
  * حفظ نتيجة مباراة جديدة وتحديث إحصائيات اللاعبين في Transaction واحدة
+ * باستخدام withTransactionAsync بدلاً من execSync('BEGIN TRANSACTION')
  */
-export const saveMatchResult = (
+export const saveMatchResult = async (
   category: string,
   secretWord: string,
   spyNames: string[],
   winner: MatchWinner,
   pointsPool: number,
   playersDetails: MatchResultPlayer[],
-): boolean => {
+): Promise<boolean> => {
   const database = getDatabase();
 
   try {
-    database.execSync('BEGIN TRANSACTION;');
+    await database.withTransactionAsync(async () => {
+      const matchId = await insertMatchRecord(database, { category, secretWord, spyNames, winner, pointsPool });
 
-    const matchId = insertMatchRecord(database, { category, secretWord, spyNames, winner, pointsPool });
-
-    for (const player of playersDetails) {
-      insertMatchDetail(database, matchId, player);
-      ensurePlayerExists(database, player.name);
-      updatePlayerCumulativeStats(database, player, winner);
-    }
-
-    database.execSync('COMMIT;');
+      for (const player of playersDetails) {
+        await insertMatchDetail(database, matchId, player);
+        await ensurePlayerExists(database, player.name);
+        await updatePlayerCumulativeStats(database, player, winner);
+      }
+    });
     return true;
   } catch (error) {
-    try {
-      database.execSync('ROLLBACK;');
-    } catch (rollbackError) {
-      console.error('Rollback failed:', rollbackError);
-    }
     console.error('خطأ أثناء حفظ نتيجة المباراة:', error);
     return false;
   }
@@ -324,15 +318,15 @@ export const saveMatchResult = (
 /**
  * مسح قاعدة البيانات بالكامل (إعادة ضبط المصنع)
  */
-export const clearDatabase = (): boolean => {
+export const clearDatabase = async (): Promise<boolean> => {
   try {
     const database = getDatabase();
-    database.execSync(`
+    await database.execAsync(`
       DROP TABLE IF EXISTS match_details;
       DROP TABLE IF EXISTS matches;
       DROP TABLE IF EXISTS players;
     `);
-    initDB();
+    await initDB();
     return true;
   } catch (error) {
     console.error('خطأ أثناء مسح قاعدة البيانات:', error);

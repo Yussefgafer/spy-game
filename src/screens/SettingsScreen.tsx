@@ -24,9 +24,9 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [showClearModal, setShowClearModal] = useState(false);
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     hapticWarning();
-    clearDatabase();
+    await clearDatabase();
     setShowClearModal(false);
   };
 

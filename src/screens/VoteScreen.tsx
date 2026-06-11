@@ -303,7 +303,6 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -311,6 +310,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel={`صوّت على ${player}`}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
@@ -350,7 +350,6 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -358,6 +357,7 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel="أفضل عدم التصويت"
         accessibilityRole="radio"
         accessibilityState={{ selected: skipped }}

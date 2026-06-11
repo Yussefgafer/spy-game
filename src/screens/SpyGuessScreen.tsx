@@ -19,7 +19,7 @@ export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SpyGuessRouteProp>();
-  const { categoryId, correctWord, players, spies, categoryName } = route.params;
+  const { categoryId, secretWord, players, spies, categoryName } = route.params;
 
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
@@ -32,9 +32,9 @@ export const SpyGuessScreen: React.FC = () => {
     const category = CATEGORIES.find((c) => c.id === categoryId);
     if (!category) return;
 
-    const otherWords = category.words.filter((w) => w !== correctWord);
+    const otherWords = category.words.filter((w) => w !== secretWord);
     const randomWords = shuffleArray(otherWords).slice(0, 5);
-    setShuffledWords(shuffleArray([...randomWords, correctWord]));
+    setShuffledWords(shuffleArray([...randomWords, secretWord]));
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -59,7 +59,7 @@ export const SpyGuessScreen: React.FC = () => {
   useEffect(() => {
     if (timeLeft === 0 && !timedOut) {
       setTimedOut(true);
-      handleGuess(correctWord, true);
+      handleGuess(secretWord, true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft]);
@@ -67,7 +67,7 @@ export const SpyGuessScreen: React.FC = () => {
   const handleGuess = (word: string, _isTimeout = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const isCorrect = word === correctWord;
+    const isCorrect = word === secretWord;
 
     if (isCorrect) {
       hapticSuccess();
@@ -80,7 +80,7 @@ export const SpyGuessScreen: React.FC = () => {
     navigation.navigate('Vote', {
       players,
       spies,
-      secretWord: correctWord,
+      secretWord,
       categoryName,
       categoryId,
       spyGuessedCorrectly: isCorrect,
@@ -246,7 +246,6 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -254,6 +253,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         style={[
           styles.wordOption,
           {
