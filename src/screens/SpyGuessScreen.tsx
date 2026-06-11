@@ -33,10 +33,10 @@ export const SpyGuessScreen: React.FC = () => {
   const secretWordRef = useRef(secretWord);
   secretWordRef.current = secretWord;
 
-  const handleGuess = useCallback((word: string, _isTimeout = false) => {
+  const handleGuess = useCallback((word: string, isTimeout = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const isCorrect = word === secretWordRef.current;
+    const isCorrect = !isTimeout && word === secretWordRef.current;
 
     if (isCorrect) {
       hapticSuccess();
