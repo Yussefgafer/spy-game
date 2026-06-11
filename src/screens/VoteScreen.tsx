@@ -17,9 +17,6 @@ export const VoteScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId, categoryName } = route.params;
-  // قراءة spyGuessedCorrectly من route.params (مع افتراضي false)
-  // هذا يبقى "الجاسوس خمّن الكلمة فعلاً في SpyGuess" — منفصل عن winner
-  const spyGuessedWord = route.params.spyGuessedCorrectly ?? false;
 
   // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
   useFocusEffect(
@@ -80,7 +77,9 @@ export const VoteScreen: React.FC = () => {
     hapticSuccess();
 
     if (isLastVoter) {
-      // الجواسيس يُستبعدون من correctVoters حتى لو صوّتوا على جاسوس آخر
+      const innocentCount = players.length - spies.length;
+
+      // الجواسيس يُستبعدون من correctVoters
       const correctVoters: string[] = [];
       Object.entries(votes).forEach(([voter, suspected]) => {
         if (spies.includes(suspected) && !spies.includes(voter)) {
@@ -88,24 +87,30 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // الفائز النهائي:
-      // - الأبرياء فازوا: ≥1 لاعب بريء صوّت على جاسوس
-      // - الجواسيس فازوا: خمّنوا الكلمة، أو نجوا (لا أحد صوّت عليهم)
-      const winner: 'SPY' | 'PLAYERS' =
-        correctVoters.length > 0 ? 'PLAYERS' : 'SPY';
+      const isUnanimous = correctVoters.length === innocentCount;
 
-      navigation.navigate('Results', {
-        players,
-        spies,
-        secretWord,
-        categoryName: categoryName || '',
-        categoryId,
-        correctVoters,
-        // الجاسوس خمّن الكلمة فعلاً (للنقاط فقط) — من SpyGuess
-        spyGuessedWord,
-        // الفائز النهائي (للعرض: "فاز الأبرياء" أو "فاز الجاسوس")
-        winner,
-      });
+      if (isUnanimous) {
+        // كل الأبرياء صوّتوا على الجاسوس → إجماع → نتائج مباشرة
+        navigation.navigate('Results', {
+          players,
+          spies,
+          secretWord,
+          categoryName: categoryName || '',
+          categoryId,
+          correctVoters,
+          winner: 'PLAYERS',
+        });
+      } else {
+        // في واحد اختلف/تخطى → الجاسوس يحصل على فرصة التخمين
+        navigation.navigate('SpyGuess', {
+          players,
+          spies,
+          secretWord,
+          categoryName: categoryName || '',
+          categoryId,
+          correctVoters,
+        });
+      }
     } else {
       setCurrentVoterIndex(currentVoterIndex + 1);
     }

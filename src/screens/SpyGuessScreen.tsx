@@ -20,7 +20,7 @@ export const SpyGuessScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<SpyGuessRouteProp>();
-  const { categoryId, secretWord, players, spies, categoryName } = route.params;
+  const { categoryId, secretWord, players, spies, categoryName, correctVoters } = route.params;
 
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
@@ -76,15 +76,15 @@ export const SpyGuessScreen: React.FC = () => {
       hapticError();
     }
 
-    // تمرير نتيجة تخمين الجاسوس إلى شاشة Vote
-    // (true لو خمّن صح، false لو خطأ أو انتهى الوقت)
-    navigation.navigate('Vote', {
+    navigation.navigate('Results', {
       players,
       spies,
       secretWord,
-      categoryName,
+      categoryName: categoryName || '',
       categoryId,
-      spyGuessedCorrectly: isCorrect,
+      correctVoters,
+      spyGuessedWord: isCorrect,
+      winner: isCorrect ? 'SPY' : 'PLAYERS',
     });
   };
 

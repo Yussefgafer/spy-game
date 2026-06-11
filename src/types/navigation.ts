@@ -15,21 +15,13 @@ export type RootStackParamList = {
     categoryName: string;
     categoryId: string;
   };
-  SpyIdentify: {
-    spyName: string;
-    secretWord: string;
-    categoryName: string;
-    categoryId: string;
-    players: string[];
-    spies: string[];
-  };
   SpyGuess: {
-    spyName: string;
+    players: string[];
+    spies: string[];
     secretWord: string;
     categoryName: string;
     categoryId: string;
-    players: string[];
-    spies: string[];
+    correctVoters: string[];
   };
   Vote: {
     players: string[];
@@ -37,13 +29,6 @@ export type RootStackParamList = {
     secretWord: string;
     categoryName: string;
     categoryId: string;
-    /**
-     * هل خمّن الجاسوس الكلمة السرية بشكل صحيح؟
-     * - undefined: لم يدخل الجاسوس مرحلة التخمين (تخطّي مباشر)
-     * - true: خمّن صح
-     * - false: خمّن خطأ أو انتهى الوقت
-     */
-    spyGuessedCorrectly?: boolean;
   };
   Results: {
     players: string[];
@@ -53,14 +38,16 @@ export type RootStackParamList = {
     categoryId: string;
     correctVoters: string[];
     /**
-     * هل خمّن الجاسوس الكلمة السرية فعلاً (دخل مرحلة SpyGuess وأجاب صح)؟
-     * منفصل عن winner — هذا يتحكم فقط في توزيع النقاط.
+     * هل خمّن الجاسوس الكلمة السرية فعلاً (دخل مرحلة SpyGuess)؟
+     * - undefined: إجماع → ما في SpyGuess (كل الأبرياء صوّتوا على الجاسوس)
+     * - true: خمّن صح
+     * - false: خمّن خطأ أو انتهى الوقت
      */
-    spyGuessedWord: boolean;
+    spyGuessedWord?: boolean;
     /**
-     * الفائز النهائي: الأبرياء (كشفوا الجاسوس) أم الجواسيس (نجوا أو خمّنوا).
-     * - 'SPY': الجواسيس فازوا (إما بالتخمين، أو بالهروب من التصويت)
-     * - 'PLAYERS': الأبرياء فازوا (صوّتوا على جاسوس ≥1)
+     * الفائز النهائي.
+     * - 'SPY': الجاسوس فاز (نجا من التصويت وخمّن صح)
+     * - 'PLAYERS': الأبرياء فازوا (إما بالإجماع، أو لأن الجاسوس خمّن غلط)
      */
     winner: 'SPY' | 'PLAYERS';
   };

@@ -19,14 +19,12 @@ export const GameplayScreen: React.FC = () => {
 
   const handleEndQuestions = () => {
     hapticSuccess();
-    const spyName = spies[0]; // أول جاسوس
-    navigation.navigate('SpyIdentify', {
-      spyName,
+    navigation.navigate('Vote', {
+      players,
+      spies,
       secretWord,
       categoryName,
       categoryId,
-      players,
-      spies,
     });
   };
 
