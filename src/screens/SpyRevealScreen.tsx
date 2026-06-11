@@ -57,20 +57,6 @@ export const SpyRevealScreen: React.FC = () => {
           </View>
         </PopInView>
 
-        {/* Secret Word Card */}
-        <PopInView delay={300}>
-          <View style={[styles.wordCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.wordLabel, { color: colors.textMuted }]}>
-              الكلمة السرية
-            </Text>
-            <Text style={[styles.secretWord, { color: colors.accent }]}>
-              {secretWord}
-            </Text>
-            <Text style={[styles.categoryHint, { color: colors.textMuted }]}>
-              التصنيف: {categoryName}
-            </Text>
-          </View>
-        </PopInView>
       </View>
 
       {/* Instruction */}
@@ -165,28 +151,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  wordCard: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1.5,
-  },
-  wordLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  secretWord: {
-    fontSize: 32,
-    fontWeight: '800',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  categoryHint: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   instructionContainer: {
     paddingBottom: 12,
