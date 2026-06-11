@@ -191,6 +191,7 @@ const BouncyTimerCard: React.FC<BouncyTimerCardProps> = ({ timeLeft, isUrgent, f
       pulseLoop?.stop();
       shakeLoop?.stop();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUrgent]);
 
   return (
@@ -237,6 +238,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
     } else {
       checkScale.setValue(0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   const handlePressIn = () => {
@@ -246,7 +248,6 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -254,6 +255,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         style={[
           styles.wordOption,
           {

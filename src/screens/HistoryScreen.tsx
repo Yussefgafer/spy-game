@@ -133,6 +133,7 @@ const BouncyMatchCard: React.FC<BouncyMatchCardProps> = ({ match, isExpanded, is
       friction: 12,
       useNativeDriver: false,
     }).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded]);
 
   const handlePressIn = () => {
