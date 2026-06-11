@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RefreshCw, Home, Target, Users, Eye, CheckCircle, Sparkles } from 'lucide-react-native';
+import { RefreshCw, Home, Target, Users, Eye, CheckCircle } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { saveMatchResult } from '../database/sqlite';
-import { hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
+import { BouncyButton } from '../components/BouncyButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ResultsRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -171,17 +171,18 @@ export const ResultsScreen: React.FC = () => {
       {/* Actions */}
       <SlideInBounceView delay={600}>
         <View style={styles.footer}>
-          <BouncyPrimaryButton
+          <BouncyButton
             onPress={() => navigation.popToTop()}
             colors={colors}
             label="لعبة جديدة"
             icon={<RefreshCw size={22} color="#000" />}
           />
-          <BouncySecondaryButton
+          <BouncyButton
             onPress={() => navigation.popToTop()}
             colors={colors}
             label="الرئيسية"
             icon={<Home size={22} color={colors.text} />}
+            variant="secondary"
           />
         </View>
       </SlideInBounceView>
@@ -348,76 +349,7 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedC
   );
 };
 
-// Bouncy Primary Button
-interface BouncyPrimaryButtonProps {
-  onPress: () => void;
-  colors: ThemeColors;
-  label: string;
-  icon: React.ReactNode;
-}
 
-const BouncyPrimaryButton: React.FC<BouncyPrimaryButtonProps> = ({ onPress, colors, label, icon }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={[styles.primaryButton, { backgroundColor: colors.accent }]}
-      >
-        <Sparkles size={20} color="#000" />
-        {icon}
-        <Text style={styles.primaryButtonText}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-// Bouncy Secondary Button
-interface BouncySecondaryButtonProps {
-  onPress: () => void;
-  colors: ThemeColors;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const BouncySecondaryButton: React.FC<BouncySecondaryButtonProps> = ({ onPress, colors, label, icon }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={[styles.secondaryButton, { borderColor: colors.border }]}
-      >
-        {icon}
-        <Text style={[styles.secondaryButtonText, { color: colors.text }]}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -518,31 +450,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     gap: 12,
-  },
-  primaryButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    borderRadius: 16,
-    gap: 12,
-  },
-  primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#000',
-  },
-  secondaryButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    gap: 12,
-  },
-  secondaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
   },
 });

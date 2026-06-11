@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { X, Play, Sparkles, Users } from 'lucide-react-native';
+import { X, Users } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
@@ -13,6 +13,8 @@ import { loadPreferences, savePreferences } from '../utils/preferences';
 import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { AutoCompleteInput } from '../components/AutoCompleteInput';
+import { BouncyStartButton } from '../components/BouncyButton';
+import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT, ANIM_SPRING_BOUNCIER } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -200,7 +202,6 @@ export const SetupScreen: React.FC = () => {
             onPress={handleStartGame}
             disabled={players.length < MIN_PLAYERS}
             colors={colors}
-            canStart={players.length >= MIN_PLAYERS}
           />
         </View>
       </SlideInBounceView>
@@ -229,8 +230,7 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.88,
-      tension: 400,
-      friction: 10,
+      ...ANIM_SPRING_PRESS_IN,
       useNativeDriver: true,
     }).start();
     hapticLight();
@@ -239,14 +239,12 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1.15,
-      tension: 500,
-      friction: 6,
+      ...ANIM_SPRING_PRESS_OUT,
       useNativeDriver: true,
     }).start(() => {
       Animated.spring(scaleAnim, {
         toValue: 1,
-        tension: 400,
-        friction: 8,
+        ...ANIM_SPRING_BOUNCIER,
         useNativeDriver: true,
       }).start();
     });
@@ -330,72 +328,6 @@ const BouncyPlayerItem: React.FC<BouncyPlayerItemProps> = ({ name, onRemove, col
           <X size={20} color={colors.danger} />
         </Pressable>
       </View>
-    </Animated.View>
-  );
-};
-
-interface BouncyStartButtonProps {
-  onPress: () => void;
-  disabled: boolean;
-  colors: ThemeColors;
-  canStart: boolean;
-}
-
-const BouncyStartButton: React.FC<BouncyStartButtonProps> = ({
-  onPress,
-  disabled,
-  colors,
-  canStart,
-}) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    if (disabled) return;
-    Animated.spring(scaleAnim, {
-      toValue: 0.94,
-      tension: 400,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      tension: 500,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        disabled={disabled}
-        style={[
-          styles.startButton,
-          {
-            backgroundColor: canStart ? colors.accent : colors.card,
-            borderColor: colors.border,
-            opacity: disabled ? 0.6 : 1,
-          },
-        ]}
-      >
-        {canStart && <Sparkles size={20} color="#000" />}
-        <Play size={20} color={canStart ? '#000' : colors.textMuted} />
-        <Text
-          style={[
-            styles.startButtonText,
-            { color: canStart ? '#000' : colors.textMuted },
-          ]}
-        >
-          ابدأ اللعب!
-        </Text>
-      </Pressable>
     </Animated.View>
   );
 };
@@ -495,18 +427,5 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 16,
-  },
-  startButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    gap: 10,
-  },
-  startButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });
