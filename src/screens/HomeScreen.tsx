@@ -6,7 +6,7 @@ import { Play, Trophy, History, Settings } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
-import { PopInView, FloatingView, PulseView } from '../components/BouncyAnimations';
+import { PopInView, PulseView } from '../components/BouncyAnimations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

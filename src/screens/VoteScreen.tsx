@@ -222,6 +222,7 @@ const BouncyProgressDot: React.FC<BouncyProgressDotProps> = ({ index, currentInd
     return () => {
       animation?.stop();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCurrent]);
 
   const getBgColor = () => {
@@ -256,6 +257,7 @@ const BouncyVoterCard: React.FC<BouncyVoterCardProps> = ({ voter, voterNumber, t
 
   useEffect(() => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 8, useNativeDriver: true }).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voter]);
 
   return (
@@ -294,6 +296,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
     } else {
       checkScale.setValue(0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   const handlePressIn = () => {
@@ -303,7 +306,6 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -311,6 +313,7 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel={`صوّت على ${player}`}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
@@ -350,7 +353,6 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
   };
 
   return (
@@ -358,6 +360,7 @@ const BouncySkipOption: React.FC<BouncySkipOptionProps> = ({ skipped, onPress, c
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         accessibilityLabel="أفضل عدم التصويت"
         accessibilityRole="radio"
         accessibilityState={{ selected: skipped }}
