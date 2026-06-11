@@ -7,8 +7,9 @@ import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { CATEGORIES } from '../constants/words';
 import { shuffleArray } from '../utils/shuffle';
-import { hapticLight, hapticSuccess, hapticError, hapticWarning } from '../utils/haptics';
+import { hapticSuccess, hapticError, hapticWarning, hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
+import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SpyGuessRouteProp = RouteProp<RootStackParamList, 'SpyGuess'>;
@@ -228,32 +229,25 @@ interface BouncyWordOptionProps {
 }
 
 const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const { scaleAnim, checkScale, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.95,
+    enableCheckScale: true,
+  });
 
   useEffect(() => {
-    if (selected) {
+    if (selected && checkScale) {
       Animated.spring(checkScale, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    } else {
+    } else if (checkScale) {
       checkScale.setValue(0);
     }
-  }, [selected]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-    onPress();
-  };
+  }, [selected, checkScale]);
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         style={[
           styles.wordOption,
           {
@@ -263,7 +257,7 @@ const BouncyWordOption: React.FC<BouncyWordOptionProps> = ({ word, selected, onP
         ]}
       >
         <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
-        {selected && (
+        {selected && checkScale && (
           <Animated.View style={[styles.checkIcon, { transform: [{ scale: checkScale }] }]}>
             <Zap size={20} color={colors.accent} />
           </Animated.View>
@@ -281,17 +275,10 @@ interface BouncyConfirmButtonProps {
 }
 
 const BouncyConfirmButton: React.FC<BouncyConfirmButtonProps> = ({ selectedWord, onPress, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    if (!selectedWord) return;
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
+  const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.94,
+    disabled: !selectedWord,
+  });
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
