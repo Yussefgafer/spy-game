@@ -106,15 +106,16 @@ export const ResultsScreen: React.FC = () => {
 
   useEffect(() => {
     if (saved) return;
-    const success = saveMatchResult(
+    saveMatchResult(
       categoryName,
       secretWord,
       spies,
       winner,
       totalPoints,
       playerResults
-    );
-    if (success) setSaved(true);
+    ).then((success) => {
+      if (success) setSaved(true);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
