@@ -96,5 +96,5 @@ pnpm-workspace.yaml
 
 android
 ios
-pnpm-lock.yaml
 .gemini
+AGENTS.md
