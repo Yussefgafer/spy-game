@@ -103,7 +103,7 @@ export const VoteScreen: React.FC = () => {
           winner: 'PLAYERS',
         });
       } else {
-        navigation.navigate('SpyGuess', {
+        navigation.navigate('SpyReveal', {
           players,
           spies,
           secretWord,
