@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RefreshCw, Home, Target, Users, Eye, CheckCircle, Sparkles } from 'lucide-react-native';
+import { RefreshCw, Home, Target, Users, Eye, CheckCircle } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { saveMatchResult } from '../database/sqlite';
-import { hapticLight } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
+import { BouncyButton } from '../components/BouncyButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ResultsRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -20,37 +20,18 @@ export const ResultsScreen: React.FC = () => {
 
   const [saved, setSaved] = useState(false);
 
-  // 🏆 نظام النقاط (قاعدة اللعبة الجديدة):
+  // 🏆 نظام النقاط (3 سيناريوهات):
   //
-  // [1] الأبرياء فازوا (winner = 'PLAYERS') + الجاسوس لم يخمّن (spyGuessedWord = false):
-  //     - كل لاعب بريء صوّت على جاسوس يأخذ:
-  //       pointsPerVoter = floor( (playersCount × 10) / correctVotersCount )
-  //     - الجواسيس يأخذون 0.
-  //     - مثال: 3 لاعبين، 1 صوّت صح: 30 نقطة له، الجواسيس 0.
-  //     - مثال: 4 لاعبين، 2 صوّتوا صح: floor(40/2) = 20 لكل واحد.
+  // [أ] إجماع: كل الأبرياء صوّتوا على الجاسوس (winner='PLAYERS', spyGuessedWord=undefined)
+  //     - كل مصوّت صحيح: floor(players × 10 / correctVoters)
+  //     - الجواسيس 0
   //
-  // [2] الأبرياء فازوا + الجاسوس خمّن (winner = 'PLAYERS', spyGuessedWord = true):
-  //     - نفس [1] (الأبرياء يأخذون نقاطهم).
-  //     - لكن الجواسيس لا يأخذون شيئاً لأن الأبرياء كشفوهم.
-  //     - (هذا السيناريو غريب: الجاسوس خمّن صح لكن الأبرياء صوّتوا عليه أيضاً.)
+  // [ب] الجاسوس نجا من التصويت وخمّن صح (winner='SPY', spyGuessedWord=true)
+  //     - كل جاسوس: floor((players × 10 / 2) / spies)
+  //     - الأبرياء 0
   //
-  // [3] الجواسيس فازوا + خمّنوا (winner = 'SPY', spyGuessedWord = true):
-  //     - الأبرياء لا يأخذون نقاط (الجواسيس فازوا).
-  //     - كل جاسوس يأخذ:
-  //       pointsPerSpy = floor( (playersCount × 10 / 2) / spiesCount )
-  //     - مثال: 5 لاعبين، 2 جواسيس: floor(50/2/2) = floor(12.5) = 12 لكل جاسوس.
-  //     - مثال: 4 لاعبين، 1 جاسوس: floor(40/2) = 20.
-  //
-  // [4] الجواسيس فازوا بدون تخمين (winner = 'SPY', spyGuessedWord = false):
-  //     - "الهروب": لا أحد صوّت على جاسوس (correctVoters = []).
-  //     - كل جاسوس يأخذ:
-  //       pointsPerSpy = floor( playersCount / spiesCount )
-  //     - مثال: 5 لاعبين، 1 جاسوس: floor(5/1) = 5.
-  //     - مثال: 5 لاعبين، 2 جواسيس: floor(5/2) = 2 لكل واحد (0.5 تُتجاهل).
-  //     - مثال: 3 لاعبين، 1 جاسوس: floor(3/1) = 3.
-  //     - مثال: 4 لاعبين، 2 جواسيس: floor(4/2) = 2 لكل واحد.
-  //
-  // قاعدة الكسور: floor() — أي 0.9 تصبح 0.
+  // [ج] الجاسوس نجا من التصويت وخمّن غلط (winner='PLAYERS', spyGuessedWord=false)
+  //     - الكل 0 نقطة (الأبرياء فازوا ولكن بدون مكافأة)
   const playerResults = useMemo(() => {
     const playersCount = players.length;
     const spiesCount = spies.length;
@@ -61,31 +42,18 @@ export const ResultsScreen: React.FC = () => {
       const isCorrectVoter = correctVoters.includes(name);
       let pointsGained = 0;
 
-      if (winner === 'PLAYERS') {
-        // الأبرياء فازوا.
-        // اللاعب الذي صوّت صح يأخذ نقاطه.
-        // (الجواسيس لا يأخذون شيئاً في كلتا الحالتين: سواء الجاسوس خمّن أم لا.)
+      if (winner === 'PLAYERS' && spyGuessedWord === undefined) {
+        // [أ] إجماع → الأبرياء فازوا، المصوّتون بشكل صحيح يأخذون نقاط
         if (!isSpy && isCorrectVoter) {
-          // الصيغة: floor((playersCount × 10) / correctVotersCount)
-          // القسمة على 0 محمية لأن winner = 'PLAYERS' → correctVotersCount ≥ 1.
           pointsGained = Math.floor((playersCount * 10) / correctVotersCount);
         }
-        // الجواسيس: 0 نقطة.
-      } else {
-        // winner === 'SPY' (الجواسيس فازوا).
+      } else if (winner === 'SPY' && spyGuessedWord === true) {
+        // [ب] الجاسوس فاز بالتخمين
         if (isSpy) {
-          if (spyGuessedWord) {
-            // الحالة [3]: خمّنوا الكلمة
-            // الصيغة: floor((playersCount × 10 / 2) / spiesCount)
-            pointsGained = Math.floor((playersCount * 10 / 2) / spiesCount);
-          } else {
-            // الحالة [4]: هروب (الجميع skip)
-            // الصيغة: floor(playersCount / spiesCount)
-            pointsGained = Math.floor(playersCount / spiesCount);
-          }
+          pointsGained = Math.floor((playersCount * 10 / 2) / spiesCount);
         }
-        // الأبرياء: 0 نقطة.
       }
+      // [ج] winner='PLAYERS', spyGuessedWord=false → 0 للكل
 
       return {
         name,
@@ -164,12 +132,13 @@ export const ResultsScreen: React.FC = () => {
           />
         </PopInView>
 
-        {/* Correct Voters (إذا فاز الأبرياء) */}
+        {/* Correct Voters */}
         {winner === 'PLAYERS' && correctVoters.length > 0 && (
           <PopInView delay={400}>
             <BouncyCorrectVotersCard
               correctVoters={correctVoters}
               playersCount={players.length}
+              showPoints={spyGuessedWord === undefined}
               colors={colors}
             />
           </PopInView>
@@ -202,17 +171,18 @@ export const ResultsScreen: React.FC = () => {
       {/* Actions */}
       <SlideInBounceView delay={600}>
         <View style={styles.footer}>
-          <BouncyPrimaryButton
+          <BouncyButton
             onPress={() => navigation.popToTop()}
             colors={colors}
             label="لعبة جديدة"
             icon={<RefreshCw size={22} color="#000" />}
           />
-          <BouncySecondaryButton
+          <BouncyButton
             onPress={() => navigation.popToTop()}
             colors={colors}
             label="الرئيسية"
             icon={<Home size={22} color={colors.text} />}
+            variant="secondary"
           />
         </View>
       </SlideInBounceView>
@@ -223,7 +193,7 @@ export const ResultsScreen: React.FC = () => {
 // Bouncy Winner Card
 interface BouncyWinnerCardProps {
   spyWins: boolean;
-  spyGuessedWord: boolean;
+  spyGuessedWord?: boolean;
   winner: 'SPY' | 'PLAYERS';
   colors: ThemeColors;
 }
@@ -239,24 +209,25 @@ const BouncyWinnerCard: React.FC<BouncyWinnerCardProps> = ({ spyWins, spyGuessed
     ]).start();
   }, [scaleAnim, rotateAnim]);
 
-  // نصوص مختلفة حسب السيناريو (3 حالات للجواسيس، 1 للأبرياء)
   const getTitleAndSubtitle = (): { title: string; subtitle: string } => {
-    if (winner === 'PLAYERS') {
+    if (winner === 'PLAYERS' && spyGuessedWord === undefined) {
+      // [أ] إجماع
       return {
         title: 'فاز الأبرياء!',
         subtitle: 'تمكن الأبرياء من كشف الجاسوس 🎊',
       };
     }
-    // winner === 'SPY'
-    if (spyGuessedWord) {
+    if (winner === 'PLAYERS' && spyGuessedWord === false) {
+      // [ج] الجاسوس نجا وخمّن غلط
       return {
-        title: 'فاز الجاسوس!',
-        subtitle: 'اكتشف الجاسوس الكلمة السرية 👏',
+        title: 'فاز الأبرياء!',
+        subtitle: 'الجاسوس نجا لكنه خمّن خطأ ✅',
       };
     }
+    // winner === 'SPY', spyGuessedWord === true → الجاسوس خمّن صح
     return {
       title: 'فاز الجاسوس!',
-      subtitle: 'نجا الجاسوس من التصويت 🏃‍♂️',
+      subtitle: 'اكتشف الجاسوس الكلمة السرية 👏',
     };
   };
 
@@ -316,15 +287,14 @@ const BouncyInfoCard: React.FC<BouncyInfoCardProps> = ({ icon, label, value, val
 };
 
 // Bouncy Correct Voters Card
-// يعرض عدد النقاط الديناميكي (نظام النقاط الجديد)
 interface BouncyCorrectVotersCardProps {
   correctVoters: string[];
   playersCount: number;
+  showPoints: boolean;
   colors: ThemeColors;
 }
 
-const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ correctVoters, playersCount, colors }) => {
-  // نقاط ديناميكية حسب قاعدة اللعبة الجديدة
+const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ correctVoters, playersCount, showPoints, colors }) => {
   const pointsPerVoter = Math.floor((playersCount * 10) / correctVoters.length);
 
   return (
@@ -336,9 +306,11 @@ const BouncyCorrectVotersCard: React.FC<BouncyCorrectVotersCardProps> = ({ corre
         <Text style={[styles.infoLabel, { color: colors.textMuted }]}>صوّتوا بشكل صحيح</Text>
       </View>
       <Text style={[styles.infoValue, { color: colors.text }]}>{correctVoters.join('، ')}</Text>
-      <Text style={[styles.pointsText, { color: colors.accent }]}>
-        🏆 +{pointsPerVoter} نقطة لكل منهم
-      </Text>
+      {showPoints && (
+        <Text style={[styles.pointsText, { color: colors.accent }]}>
+          🏆 +{pointsPerVoter} نقطة لكل منهم
+        </Text>
+      )}
     </View>
   );
 };
@@ -377,76 +349,7 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedC
   );
 };
 
-// Bouncy Primary Button
-interface BouncyPrimaryButtonProps {
-  onPress: () => void;
-  colors: ThemeColors;
-  label: string;
-  icon: React.ReactNode;
-}
 
-const BouncyPrimaryButton: React.FC<BouncyPrimaryButtonProps> = ({ onPress, colors, label, icon }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={[styles.primaryButton, { backgroundColor: colors.accent }]}
-      >
-        <Sparkles size={20} color="#000" />
-        {icon}
-        <Text style={styles.primaryButtonText}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-// Bouncy Secondary Button
-interface BouncySecondaryButtonProps {
-  onPress: () => void;
-  colors: ThemeColors;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const BouncySecondaryButton: React.FC<BouncySecondaryButtonProps> = ({ onPress, colors, label, icon }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={[styles.secondaryButton, { borderColor: colors.border }]}
-      >
-        {icon}
-        <Text style={[styles.secondaryButtonText, { color: colors.text }]}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -547,31 +450,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     gap: 12,
-  },
-  primaryButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    borderRadius: 16,
-    gap: 12,
-  },
-  primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#000',
-  },
-  secondaryButton: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    gap: 12,
-  },
-  secondaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
   },
 });

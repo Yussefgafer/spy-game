@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Modal, ScrollView, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -6,7 +6,7 @@ import { ChevronLeft, Moon, Sun, Sparkles, Trash2, AlertTriangle, Check, Palette
 import { useTheme, ThemeType, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { clearDatabase } from '../database/sqlite';
-import { hapticLight, hapticWarning, hapticSuccess } from '../utils/haptics';
+import { hapticWarning, hapticSuccess } from '../utils/haptics';
 import { PopInView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { SafePressable } from '../components/SafePressable';
@@ -25,11 +25,11 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [showClearModal, setShowClearModal] = useState(false);
 
-  const handleClearData = async () => {
+  const handleClearData = useCallback(async () => {
     hapticWarning();
     await clearDatabase();
     setShowClearModal(false);
-  };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -162,15 +162,6 @@ const BouncyThemeCard: React.FC<BouncyThemeCardProps> = ({ option, isSelected, I
       checkScale.setValue(0);
     }
   }, [isSelected, checkScale]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>

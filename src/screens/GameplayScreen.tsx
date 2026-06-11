@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, SlideInBounceView, FloatingView, PulseView } from '../components/BouncyAnimations';
+import { ANIM_TIMING_FAST } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type GameplayRouteProp = RouteProp<RootStackParamList, 'Gameplay'>;
@@ -17,18 +18,16 @@ export const GameplayScreen: React.FC = () => {
   const route = useRoute<GameplayRouteProp>();
   const { players, spies, secretWord, categoryName, categoryId } = route.params;
 
-  const handleEndQuestions = () => {
+  const handleEndQuestions = useCallback(() => {
     hapticSuccess();
-    const spyName = spies[0]; // أول جاسوس
-    navigation.navigate('SpyIdentify', {
-      spyName,
+    navigation.navigate('Vote', {
+      players,
+      spies,
       secretWord,
       categoryName,
       categoryId,
-      players,
-      spies,
     });
-  };
+  }, [navigation, players, spies, secretWord, categoryName, categoryId]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -141,7 +140,7 @@ const BouncyEndButton: React.FC<BouncyEndButtonProps> = ({ onPress, colors }) =>
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 0.94, tension: 400, friction: 10, useNativeDriver: true }),
       Animated.spring(rotateAnim, { toValue: -5, tension: 300, friction: 8, useNativeDriver: true }),
-      Animated.timing(glowAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 1, ...ANIM_TIMING_FAST, useNativeDriver: true }),
     ]).start();
     hapticLight();
   };

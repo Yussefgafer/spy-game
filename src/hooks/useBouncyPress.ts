@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { Animated } from 'react-native';
 import { hapticLight } from '../utils/haptics';
+import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT, ANIM_SPRING_BOUNCY } from '../constants/animations';
 
 /**
  * خيارات تهيئة useBouncyPress
@@ -84,8 +85,7 @@ export const useBouncyPress = (options: UseBouncyPressOptions = {}): UseBouncyPr
     const animations: Animated.CompositeAnimation[] = [
       Animated.spring(scaleAnim, {
         toValue: pressInScale,
-        tension: 400,
-        friction: 10,
+        ...ANIM_SPRING_PRESS_IN,
         useNativeDriver: true,
       }),
     ];
@@ -94,8 +94,7 @@ export const useBouncyPress = (options: UseBouncyPressOptions = {}): UseBouncyPr
       animations.push(
         Animated.spring(rotateAnim, {
           toValue: rotateInValue,
-          tension: 300,
-          friction: 8,
+          ...ANIM_SPRING_BOUNCY,
           useNativeDriver: true,
         })
       );
@@ -112,8 +111,7 @@ export const useBouncyPress = (options: UseBouncyPressOptions = {}): UseBouncyPr
     const animations: Animated.CompositeAnimation[] = [
       Animated.spring(scaleAnim, {
         toValue: 1,
-        tension: 500,
-        friction: 6,
+        ...ANIM_SPRING_PRESS_OUT,
         useNativeDriver: true,
       }),
     ];
@@ -122,8 +120,7 @@ export const useBouncyPress = (options: UseBouncyPressOptions = {}): UseBouncyPr
       animations.push(
         Animated.spring(rotateAnim, {
           toValue: 0,
-          tension: 300,
-          friction: 8,
+          ...ANIM_SPRING_BOUNCY,
           useNativeDriver: true,
         })
       );

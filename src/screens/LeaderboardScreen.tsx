@@ -9,6 +9,7 @@ import { getLeaderboard, Player } from '../database/sqlite';
 import { hapticLight } from '../utils/haptics';
 import { PopInView, FloatingView, PulseView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
+import { EmptyState, StatsCard } from '../components/SharedCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -39,19 +40,11 @@ export const LeaderboardScreen: React.FC = () => {
       </PopInView>
 
       {leaderboard.length === 0 ? (
-        <PopInView delay={150}>
-          <View style={styles.emptyContainer}>
-            <FloatingView distance={8} duration={2500}>
-              <View style={[styles.emptyIconContainer, { backgroundColor: `${colors.accent}15` }]}>
-                <Trophy size={48} color={colors.textMuted} />
-              </View>
-            </FloatingView>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>لا يوجد أبطال بعد</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              ابدأ لعب مباراتك الأولى! 🎮
-            </Text>
-          </View>
-        </PopInView>
+        <EmptyState
+          icon={<Trophy size={48} color={colors.textMuted} />}
+          title="لا يوجد أبطال بعد"
+          subtitle="ابدأ لعب مباراتك الأولى! 🎮"
+        />
       ) : (
         <>
           {/* Top 3 Podium */}
@@ -117,24 +110,13 @@ export const LeaderboardScreen: React.FC = () => {
             </PopInView>
           )}
 
-          {/* Stats */}
-          <PopInView delay={300}>
-            <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.statItem}>
-                <Users size={20} color={colors.accent} />
-                <Text style={[styles.statValue, { color: colors.text }]}>{leaderboard.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>لاعب</Text>
-              </View>
-              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.statItem}>
-                <Target size={20} color={colors.accent} />
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {leaderboard.reduce((sum, p) => sum + p.total_points, 0)}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>نقطة</Text>
-              </View>
-            </View>
-          </PopInView>
+          <StatsCard
+            delay={300}
+            items={[
+              { icon: <Users size={20} color={colors.accent} />, value: String(leaderboard.length), label: 'لاعب' },
+              { icon: <Target size={20} color={colors.accent} />, value: String(leaderboard.reduce((sum, p) => sum + p.total_points, 0)), label: 'نقطة' },
+            ]}
+          />
 
           {/* List */}
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -280,32 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  statsCard: {
-    flexDirection: 'row-reverse',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 10,
-  },
-  statDivider: {
-    width: 1.5,
-    height: 48,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
   scrollView: {
     flex: 1,
   },
@@ -354,29 +310,5 @@ const styles = StyleSheet.create({
   points: {
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });

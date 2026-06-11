@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, ViewStyle, StyleProp } from 'react-native';
+import { ANIM_SPRING_PRESS_IN } from '../constants/animations';
 
-// Spring configs
 const SPRING_CONFIG = {
-  bouncy: { tension: 400, friction: 10, useNativeDriver: true },
+  bouncy: { ...ANIM_SPRING_PRESS_IN, useNativeDriver: true },
   superBouncy: { tension: 600, friction: 8, useNativeDriver: true },
   elastic: { tension: 800, friction: 12, useNativeDriver: true },
 };

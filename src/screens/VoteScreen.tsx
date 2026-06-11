@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Animated, BackHandler, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { PopInView, SlideInBounceView, PulseView } from '../components/BouncyAnimations';
 import { useBouncyPress } from '../hooks/useBouncyPress';
+import { ANIM_SPRING_BOUNCIER } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type VoteRouteProp = RouteProp<RootStackParamList, 'Vote'>;
@@ -17,9 +18,6 @@ export const VoteScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<VoteRouteProp>();
   const { players, spies, secretWord, categoryId, categoryName } = route.params;
-  // قراءة spyGuessedCorrectly من route.params (مع افتراضي false)
-  // هذا يبقى "الجاسوس خمّن الكلمة فعلاً في SpyGuess" — منفصل عن winner
-  const spyGuessedWord = route.params.spyGuessedCorrectly ?? false;
 
   // اعتراض زر الرجوع — لا مغادرة أثناء التصويت بدون تأكيد
   useFocusEffect(
@@ -53,34 +51,38 @@ export const VoteScreen: React.FC = () => {
   const isLastVoter = currentVoterIndex === players.length - 1;
   const hasVoted = votes[currentVoter] !== undefined || skippedVoters.has(currentVoter);
 
-  const handleVote = (suspectedSpy: string) => {
+  const handleVote = useCallback((suspectedSpy: string) => {
     hapticLight();
-    setVotes({ ...votes, [currentVoter]: suspectedSpy });
-    setSkippedVoters(prev => {
+    setVotes((prev) => ({ ...prev, [currentVoter]: suspectedSpy }));
+    setSkippedVoters((prev) => {
       const newSet = new Set(prev);
       newSet.delete(currentVoter);
       return newSet;
     });
-  };
+  }, [currentVoter]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     hapticLight();
-    const newSkipped = new Set(skippedVoters);
-    newSkipped.add(currentVoter);
-    setSkippedVoters(newSkipped);
-    // Remove any previous vote if exists
-    const newVotes = { ...votes };
-    delete newVotes[currentVoter];
-    setVotes(newVotes);
-  };
+    setSkippedVoters((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(currentVoter);
+      return newSet;
+    });
+    setVotes((prev) => {
+      const newVotes = { ...prev };
+      delete newVotes[currentVoter];
+      return newVotes;
+    });
+  }, [currentVoter]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!hasVoted) return;
 
     hapticSuccess();
 
     if (isLastVoter) {
-      // الجواسيس يُستبعدون من correctVoters حتى لو صوّتوا على جاسوس آخر
+      const innocentCount = players.length - spies.length;
+
       const correctVoters: string[] = [];
       Object.entries(votes).forEach(([voter, suspected]) => {
         if (spies.includes(suspected) && !spies.includes(voter)) {
@@ -88,28 +90,32 @@ export const VoteScreen: React.FC = () => {
         }
       });
 
-      // الفائز النهائي:
-      // - الأبرياء فازوا: ≥1 لاعب بريء صوّت على جاسوس
-      // - الجواسيس فازوا: خمّنوا الكلمة، أو نجوا (لا أحد صوّت عليهم)
-      const winner: 'SPY' | 'PLAYERS' =
-        correctVoters.length > 0 ? 'PLAYERS' : 'SPY';
+      const isUnanimous = correctVoters.length === innocentCount;
 
-      navigation.navigate('Results', {
-        players,
-        spies,
-        secretWord,
-        categoryName: categoryName || '',
-        categoryId,
-        correctVoters,
-        // الجاسوس خمّن الكلمة فعلاً (للنقاط فقط) — من SpyGuess
-        spyGuessedWord,
-        // الفائز النهائي (للعرض: "فاز الأبرياء" أو "فاز الجاسوس")
-        winner,
-      });
+      if (isUnanimous) {
+        navigation.navigate('Results', {
+          players,
+          spies,
+          secretWord,
+          categoryName: categoryName || '',
+          categoryId,
+          correctVoters,
+          winner: 'PLAYERS',
+        });
+      } else {
+        navigation.navigate('SpyGuess', {
+          players,
+          spies,
+          secretWord,
+          categoryName: categoryName || '',
+          categoryId,
+          correctVoters,
+        });
+      }
     } else {
-      setCurrentVoterIndex(currentVoterIndex + 1);
+      setCurrentVoterIndex((prev) => prev + 1);
     }
-  };
+  }, [hasVoted, isLastVoter, players, spies, secretWord, categoryName, categoryId, votes, navigation]);
 
   const isSelected = (player: string) => votes[currentVoter] === player;
 
@@ -256,7 +262,7 @@ const BouncyVoterCard: React.FC<BouncyVoterCardProps> = ({ voter, voterNumber, t
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 400, friction: 8, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, { toValue: 1, ...ANIM_SPRING_BOUNCIER, useNativeDriver: true }).start();
   }, [voter, scaleAnim]);
 
   return (
@@ -298,15 +304,6 @@ const BouncyVoteOption: React.FC<BouncyVoteOptionProps> = ({ player, selected, o
       checkScale.setValue(0);
     }
   }, [selected, checkScale]);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, tension: 400, friction: 10, useNativeDriver: true }).start();
-    hapticLight();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
-  };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>

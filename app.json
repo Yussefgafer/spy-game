@@ -2,19 +2,19 @@
   "expo": {
     "name": "Spy Game",
     "slug": "spy-game",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.spygame"
+      "bundleIdentifier": "com.jo.spygame"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.spygame",
+      "package": "com.jo.spygame",
       "minSdkVersion": 21,
       "compileSdkVersion": 34,
       "targetSdkVersion": 34,
