@@ -3,10 +3,12 @@ import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptics';
 import { REVEAL_HOLD_DURATION, ANIM_TIMING_NORMAL } from '../constants/animations';
+import { PopInView } from '../components/BouncyAnimations';
+import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RevealRouteProp = RouteProp<RootStackParamList, 'Reveal'>;
@@ -131,29 +133,34 @@ export const RevealScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>كشف الأدوار</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-          اللاعب {currentIndex + 1} من {players.length}
-        </Text>
-      </View>
+      <PopInView delay={50}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>كشف الأدوار</Text>
+          <PopInView delay={100}>
+            <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+              اللاعب {currentIndex + 1} من {players.length}
+            </Text>
+          </PopInView>
+        </View>
+      </PopInView>
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         {players.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.progressDot,
-              {
-                backgroundColor: index < currentIndex
-                  ? colors.accent
-                  : index === currentIndex
-                    ? (isRevealed ? colors.accent : colors.border)
-                    : colors.border,
-              },
-            ]}
-          />
+          <PopInView key={index} delay={150 + index * 30}>
+            <View
+              style={[
+                styles.progressDot,
+                {
+                  backgroundColor: index < currentIndex
+                    ? colors.accent
+                    : index === currentIndex
+                      ? (isRevealed ? colors.accent : colors.border)
+                      : colors.border,
+                },
+              ]}
+            />
+          </PopInView>
         ))}
       </View>
 
@@ -229,25 +236,55 @@ export const RevealScreen: React.FC = () => {
       </View>
 
       {/* Next Button */}
-      <View style={styles.footer}>
-        <Pressable
-          onPress={handleNext}
-          disabled={!isRevealed}
-          style={[
-            styles.nextButton,
-            {
-              backgroundColor: isRevealed ? colors.accent : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <Text style={[styles.nextButtonText, { color: isRevealed ? '#000' : colors.textMuted }]}>
-            {isLastPlayer ? 'ابدأ اللعب' : 'التالي'}
-          </Text>
-          <ArrowLeft size={20} color={isRevealed ? '#000' : colors.textMuted} />
-        </Pressable>
-      </View>
+      <PopInView delay={300}>
+        <View style={styles.footer}>
+          <BouncyRevealNextButton
+            onPress={handleNext}
+            disabled={!isRevealed}
+            isLastPlayer={isLastPlayer}
+            colors={colors}
+          />
+        </View>
+      </PopInView>
     </View>
+  );
+};
+
+// Bouncy Next Button
+interface BouncyRevealNextButtonProps {
+  onPress: () => void;
+  disabled: boolean;
+  isLastPlayer: boolean;
+  colors: ThemeColors;
+}
+
+const BouncyRevealNextButton: React.FC<BouncyRevealNextButtonProps> = ({ onPress, disabled, isLastPlayer, colors }) => {
+  const { scaleAnim, handlePressIn, handlePressOut } = useBouncyPress({
+    pressInScale: 0.94,
+    disabled,
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        disabled={disabled}
+        style={[
+          styles.nextButton,
+          {
+            backgroundColor: !disabled ? colors.accent : colors.card,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Text style={[styles.nextButtonText, { color: !disabled ? '#000' : colors.textMuted }]}>
+          {isLastPlayer ? 'ابدأ اللعب' : 'التالي'}
+        </Text>
+        <ArrowLeft size={20} color={!disabled ? '#000' : colors.textMuted} />
+      </Pressable>
+    </Animated.View>
   );
 };
 

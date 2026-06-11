@@ -106,22 +106,18 @@ interface BouncyPlayerRowProps {
 }
 
 const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, index, total, colors }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <View
-        style={[
-          styles.playerItem,
-          index < total - 1 && { borderBottomColor: colors.border },
-        ]}
-      >
-        <View style={styles.playerNumber}>
-          <Text style={[styles.playerNumberText, { color: colors.accent }]}>{index + 1}</Text>
-        </View>
-        <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
+    <View
+      style={[
+        styles.playerItem,
+        index < total - 1 && { borderBottomColor: colors.border },
+      ]}
+    >
+      <View style={styles.playerNumber}>
+        <Text style={[styles.playerNumberText, { color: colors.accent }]}>{index + 1}</Text>
       </View>
-    </Animated.View>
+      <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
+    </View>
   );
 };
 

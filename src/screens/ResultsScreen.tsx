@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, Animated } from 'react-native';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, Animated, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RefreshCw, Home, Target, Users, Eye, CheckCircle } from 'lucide-react-native';
@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../types/navigation';
 import { saveMatchResult } from '../database/sqlite';
 import { PopInView, SlideInBounceView, PulseView, FloatingView } from '../components/BouncyAnimations';
 import { BouncyButton } from '../components/BouncyButton';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ResultsRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -327,10 +328,23 @@ interface BouncyPlayerRowProps {
 
 const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedCorrectly: _votedCorrectly, pointsGained, colors }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const animatedPoints = useAnimatedNumber(pointsGained, 600);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.97, tension: 400, friction: 10, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 500, friction: 6, useNativeDriver: true }).start();
+  };
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <View style={styles.playerRow}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.playerRow}
+      >
         <Text style={[styles.playerName, { color: colors.text }]}>{player}</Text>
         <View style={styles.playerBadges}>
           {isSpy && (
@@ -340,11 +354,11 @@ const BouncyPlayerRow: React.FC<BouncyPlayerRowProps> = ({ player, isSpy, votedC
           )}
           {pointsGained > 0 && (
             <View style={[styles.badge, { backgroundColor: `${colors.accent}20` }]}>
-              <Text style={[styles.badgeText, { color: colors.accent }]}>⭐ +{pointsGained}</Text>
+              <Text style={[styles.badgeText, { color: colors.accent }]}>⭐ +{animatedPoints}</Text>
             </View>
           )}
         </View>
-      </View>
+      </Pressable>
     </Animated.View>
   );
 };
