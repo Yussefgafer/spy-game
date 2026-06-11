@@ -242,33 +242,11 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
             data={suggestions}
             keyExtractor={(item) => `player-${item.id}`}
             renderItem={({ item }) => (
-              <Pressable
-                onPress={() => handleSelectSuggestion(item)}
-                style={({ pressed }) => [
-                  styles.suggestionItem,
-                  {
-                    borderBottomColor: colors.border,
-                    backgroundColor: pressed
-                      ? colors.accentMuted
-                      : 'transparent',
-                  },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={`اختيار ${item.name}`}
-              >
-                <View style={styles.suggestionInfo}>
-                  <Text style={[styles.suggestionName, { color: colors.text }]}>
-                    {item.name}
-                  </Text>
-                  <Text
-                    style={[styles.suggestionMeta, { color: colors.textMuted }]}
-                  >
-                    {item.matches_played > 0
-                      ? `${item.matches_played} مباراة • ${item.total_points} نقطة`
-                      : 'لم يلعب بعد'}
-                  </Text>
-                </View>
-              </Pressable>
+              <SuggestionItem
+                player={item}
+                colors={colors}
+                onSelect={handleSelectSuggestion}
+              />
             )}
             scrollEnabled={suggestions.length > 4}
             keyboardShouldPersistTaps="handled"
@@ -278,6 +256,39 @@ export const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
     </View>
   );
 };
+
+// ----- Suggestion Item -----
+interface SuggestionItemProps {
+  player: Player;
+  colors: ReturnType<typeof useTheme>['colors'];
+  onSelect: (player: Player) => void;
+}
+
+const SuggestionItem: React.FC<SuggestionItemProps> = ({ player, colors, onSelect }) => (
+  <Pressable
+    onPress={() => onSelect(player)}
+    style={({ pressed }) => [
+      styles.suggestionItem,
+      {
+        borderBottomColor: colors.border,
+        backgroundColor: pressed ? colors.accentMuted : 'transparent',
+      },
+    ]}
+    accessibilityRole="button"
+    accessibilityLabel={`اختيار ${player.name}`}
+  >
+    <View style={styles.suggestionInfo}>
+      <Text style={[styles.suggestionName, { color: colors.text }]}>
+        {player.name}
+      </Text>
+      <Text style={[styles.suggestionMeta, { color: colors.textMuted }]}>
+        {player.matches_played > 0
+          ? `${player.matches_played} مباراة • ${player.total_points} نقطة`
+          : 'لم يلعب بعد'}
+      </Text>
+    </View>
+  </Pressable>
+);
 
 const styles = StyleSheet.create({
   container: {

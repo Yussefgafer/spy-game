@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native'
 // ErrorScreen تتعمد استخدام useColorScheme بدلاً من ThemeContext.
 // ThemeContext يمكن يكون سبب الكراش نفسه، فاستخدامه هنا يسبب كراش ثاني.
 // useColorScheme أمن لأنه API native من RN وما يعتمد على React context.
-const ErrorScreen: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => {
+const ErrorScreen: React.FC<{ message?: string; onRetry: () => void }> = ({ message = 'خطأ غير معروف', onRetry }) => {
   const scheme = useColorScheme();
   const isDark = scheme !== 'light';
 
@@ -21,7 +21,7 @@ const ErrorScreen: React.FC<{ message: string; onRetry: () => void }> = ({ messa
         <Text style={styles.icon}>⚠️</Text>
         <Text style={[styles.title, { color: textPrimary }]}>حدث خطأ غير متوقع</Text>
         <Text style={[styles.message, { color: textMuted }]}>
-          {message || 'خطأ غير معروف'}
+          {message}
         </Text>
         <Pressable
           style={[styles.button, { backgroundColor: accent }]}
