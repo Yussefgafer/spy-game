@@ -14,7 +14,7 @@ import { PopInView, SlideInBounceView } from '../components/BouncyAnimations';
 import { BouncyBackButton } from '../components/BouncyBackButton';
 import { AutoCompleteInput } from '../components/AutoCompleteInput';
 import { BouncyStartButton } from '../components/BouncyButton';
-import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT, ANIM_SPRING_BOUNCIER } from '../constants/animations';
+import { ANIM_SPRING_PRESS_IN, ANIM_SPRING_PRESS_OUT } from '../constants/animations';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -75,19 +75,34 @@ export const SetupScreen: React.FC = () => {
       categoryId: selectedCategory,
     });
 
+    let resolvedCategoryId = selectedCategory;
+    let resolvedCategoryName: string | undefined;
+    let resolvedWords: string[];
+
+    if (selectedCategory === 'random') {
+      const realCategories = CATEGORIES.filter((c) => c.id !== 'random');
+      const randomCat = realCategories[Math.floor(Math.random() * realCategories.length)];
+      resolvedCategoryId = randomCat.id;
+      resolvedCategoryName = randomCat.name;
+      resolvedWords = randomCat.words;
+    } else {
+      const category = CATEGORIES.find((c) => c.id === selectedCategory);
+      resolvedCategoryName = category?.name;
+      resolvedWords = category?.words || [];
+    }
+
     const shuffledPlayers = shuffleArray(players);
     const selectedSpies: string[] = [shuffledPlayers[0]];
 
-    const category = CATEGORIES.find((c) => c.id === selectedCategory);
-    const shuffledWords = shuffleArray(category?.words || []);
+    const shuffledWords = shuffleArray(resolvedWords);
     const secretWord = shuffledWords[0];
 
     navigation.navigate('Reveal', {
       players,
       spies: selectedSpies,
       secretWord,
-      categoryName: category?.name || '',
-      categoryId: selectedCategory,
+      categoryName: resolvedCategoryName || '',
+      categoryId: resolvedCategoryId,
     });
   }, [navigation, players, selectedCategory]);
 
@@ -238,16 +253,10 @@ const BouncyCategoryChip: React.FC<BouncyCategoryChipProps> = ({
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
-      toValue: 1.15,
+      toValue: 1,
       ...ANIM_SPRING_PRESS_OUT,
       useNativeDriver: true,
-    }).start(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        ...ANIM_SPRING_BOUNCIER,
-        useNativeDriver: true,
-      }).start();
-    });
+    }).start();
   };
 
   useEffect(() => {

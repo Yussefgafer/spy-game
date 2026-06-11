@@ -45,7 +45,7 @@ interface AutoCompleteInputProps {
 }
 
 const DEBOUNCE_MS = 150;
-const INPUT_HEIGHT = 62;
+const INPUT_HEIGHT = 70;
 const BUTTON_SIZE = 38;
 const MAX_NAME_LENGTH = 30;
 const DROPDOWN_TOP_OFFSET = 8;
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
-    borderRadius: BUTTON_SIZE / 2,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,

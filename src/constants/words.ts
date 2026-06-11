@@ -196,5 +196,10 @@ export const CATEGORIES: Category[] = [
       'كارت شحن فكة بـ 10 جنيه',
       'فلاشة مليانة فيروسات من السايبر'
     ]
+  },
+  {
+    id: 'random',
+    name: '🎲 عشوائي',
+    words: [],
   }
 ];

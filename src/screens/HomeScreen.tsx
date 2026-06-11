@@ -6,7 +6,7 @@ import { Play, Trophy, History, Settings } from 'lucide-react-native';
 import { useTheme, ThemeColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types/navigation';
 import { hapticSuccess } from '../utils/haptics';
-import { PopInView, PulseView } from '../components/BouncyAnimations';
+import { PopInView } from '../components/BouncyAnimations';
 import { useBouncyPress } from '../hooks/useBouncyPress';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -214,9 +214,7 @@ const BouncySettingsButton: React.FC<BouncySettingsButtonProps> = ({ colors, onP
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <PulseView duration={2000} maxScale={1.1}>
-          <Settings size={20} color={colors.textMuted} />
-        </PulseView>
+        <Settings size={20} color={colors.textMuted} />
         <Text style={[styles.settingsLabel, { color: colors.textMuted }]}>الإعدادات</Text>
       </Pressable>
     </Animated.View>
